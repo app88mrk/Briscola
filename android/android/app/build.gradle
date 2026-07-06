@@ -1,0 +1,16 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "it.mirko.punteggibriscola"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "it.mirko.punteggibriscola"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+}

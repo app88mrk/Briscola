@@ -1,0 +1,2354 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#1a5276"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Punteggi briscola a 5"/>
+<title>Punteggi briscola a 5</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-auth-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-firestore-compat.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{min-height:100dvh;background:linear-gradient(145deg,#0d1117 0%,#161b22 60%,#0d1117 100%);font-family:Georgia,'Times New Roman',serif;color:#e6d9b8;max-width:430px;margin:0 auto;overflow-x:hidden;}
+input,button{font-family:Georgia,'Times New Roman',serif;cursor:pointer;}
+
+/* ── AUTH ── */
+#auth-screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px;}
+.auth-logo{text-align:center;margin-bottom:36px;}
+.auth-logo .suits{font-size:28px;letter-spacing:6px;color:#5dade2;margin-bottom:8px;}
+.auth-logo h1{font-size:26px;font-weight:900;letter-spacing:2px;color:#fff;}
+.auth-logo .sub{font-size:11px;color:#5dade2;letter-spacing:4px;margin-top:4px;}
+.nap-aces{display:flex;justify-content:center;align-items:center;letter-spacing:0!important;color:inherit;}
+.nap-aces img{width:150px;max-width:62vw;height:auto;display:block;border-radius:8px;box-shadow:0 6px 18px #0007;}
+.auth-box{width:100%;background:#ffffff08;border:1px solid #1a6fa844;border-radius:16px;padding:24px 20px;}
+.auth-tabs{display:flex;gap:8px;margin-bottom:24px;}
+.auth-tab{flex:1;padding:10px;border-radius:8px;border:1px solid #ffffff18;background:transparent;color:#8b8b8b;font-size:13px;transition:all .2s;}
+.auth-tab.active{background:#1a6fa822;border-color:#1a6fa844;color:#5dade2;font-weight:700;}
+.auth-field{margin-bottom:16px;}
+.auth-field label{display:block;font-size:11px;letter-spacing:2px;color:#8b8b8b;margin-bottom:8px;}
+.auth-field input{width:100%;padding:13px 14px;background:#ffffff0a;border:1px solid #ffffff18;border-radius:10px;color:#e6d9b8;font-size:15px;outline:none;}
+.auth-field input:focus{border-color:#1a6fa866;}
+.btn-auth{width:100%;padding:15px;background:linear-gradient(90deg,#154360,#1a6fa8);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;letter-spacing:1px;box-shadow:0 4px 20px #1a6fa844;margin-top:4px;}
+.btn-google,.btn-apple{width:100%;padding:13px;background:#ffffff0a;border:1px solid #ffffff22;border-radius:12px;color:#e6d9b8;font-size:14px;font-weight:600;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:10px;}
+.btn-apple svg{color:#fff;}
+.auth-error{color:#f87171;font-size:12px;margin-top:10px;padding:10px;background:#f8717111;border-radius:8px;border:1px solid #f8717133;text-align:center;}
+.auth-success{color:#4ade80;font-size:12px;margin-top:10px;padding:10px;background:#4ade8011;border-radius:8px;border:1px solid #4ade8033;text-align:center;}
+
+/* ── STANZA ── */
+#room-screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;}
+.room-logo{text-align:center;margin-bottom:28px;}
+.room-logo .suits{font-size:22px;letter-spacing:5px;color:#5dade2;margin-bottom:6px;}
+.room-logo h2{font-size:20px;font-weight:900;color:#fff;letter-spacing:2px;}
+.room-user{font-size:12px;color:#5dade2;margin-top:4px;}
+.room-box{width:100%;background:#ffffff08;border:1px solid #1a6fa844;border-radius:16px;padding:22px 18px;margin-bottom:14px;}
+.room-box h3{font-size:12px;letter-spacing:2px;color:#8b8b8b;margin-bottom:16px;}
+.room-code-display{
+  background:#0d1117;border:2px dashed #1a6fa866;border-radius:12px;
+  padding:18px;text-align:center;margin-bottom:12px;
+}
+.room-code-display .code{font-size:36px;font-weight:900;letter-spacing:8px;color:#f5c842;text-shadow:0 0 20px #f5c84266;}
+.room-code-display .label{font-size:11px;color:#8b8b8b;letter-spacing:2px;margin-bottom:8px;}
+.room-members{margin-top:10px;}
+.room-member{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#ffffff08;border-radius:8px;margin-bottom:6px;font-size:13px;}
+.room-member .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;}
+.room-member.owner .dot{background:#f5c842;}
+.room-name-field{margin-bottom:12px;}
+.room-name-field label{display:block;font-size:10px;letter-spacing:2px;color:#8b8b8b;margin-bottom:7px;}
+.room-name-field input{font-size:14px;padding:11px 12px;}
+.active-room{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#ffffff08;border:1px solid #ffffff10;border-radius:10px;margin-bottom:8px;}
+.active-room .name{font-size:13px;font-weight:700;color:#e6d9b8;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
+.active-room .code{font-size:18px;font-weight:900;letter-spacing:2px;color:#f5c842;}
+.active-room .meta{font-size:11px;color:#8b8b8b;margin-top:2px;}
+.active-room .actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.active-room button{border:none;border-radius:8px;background:#1a6fa8;color:#fff;font-size:12px;font-weight:700;padding:8px 12px;flex-shrink:0;}
+.active-room button.leave{background:#4a2a1a;color:#f5c842;border:1px solid #e67e2244;}
+.active-room button.delete{width:34px;height:34px;padding:0;border:1px solid #f8717144;background:#5c1a1a;color:#f87171;font-size:18px;line-height:1;}
+.join-input{width:100%;padding:14px;background:#ffffff0a;border:1px solid #ffffff18;border-radius:10px;color:#e6d9b8;font-size:22px;font-weight:900;letter-spacing:6px;text-align:center;outline:none;text-transform:uppercase;margin-bottom:12px;}
+.join-input:focus{border-color:#1a6fa866;}
+.btn-room{width:100%;padding:14px;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;letter-spacing:1px;margin-bottom:10px;}
+.btn-create{background:linear-gradient(90deg,#154360,#1a6fa8);box-shadow:0 4px 20px #1a6fa844;}
+.btn-join{background:linear-gradient(90deg,#1a4a2a,#27ae60);box-shadow:0 4px 20px #27ae6044;}
+.btn-share-room{background:linear-gradient(90deg,#4a2a1a,#e67e22);box-shadow:0 4px 20px #e67e2244;}
+.btn-enter{background:linear-gradient(90deg,#2a1a4a,#8e44ad);box-shadow:0 4px 20px #8e44ad44;}
+.room-divider{text-align:center;color:#555;font-size:12px;margin:16px 0;letter-spacing:2px;}
+.room-error{color:#f87171;font-size:12px;margin-top:8px;padding:8px 12px;background:#f8717111;border-radius:8px;border:1px solid #f8717133;}
+.room-success{color:#4ade80;font-size:12px;margin-top:8px;padding:8px 12px;background:#4ade8011;border-radius:8px;border:1px solid #4ade8033;}
+.btn-logout-small{background:transparent;border:1px solid #ffffff18;border-radius:6px;color:#555;font-size:11px;padding:5px 12px;margin-top:8px;}
+
+/* ── APP ── */
+#header{background:linear-gradient(90deg,#154360 0%,#1a6fa8 50%,#154360 100%);padding:14px 20px 12px;text-align:center;box-shadow:0 4px 24px #1a6fa855;position:sticky;top:0;z-index:10;}
+#header .suits{font-size:10px;letter-spacing:3px;color:#d6eaf8;opacity:.8;margin-bottom:1px;}
+#header .nap-aces{margin-bottom:3px;opacity:.95;}
+#header .nap-aces img{width:70px;border-radius:4px;box-shadow:0 3px 10px #0006;}
+#header h1{font-size:18px;font-weight:900;letter-spacing:2px;color:#fff;}
+#header .sub{font-size:10px;color:#d6eaf8bb;letter-spacing:2px;margin-top:1px;}
+#user-bar{background:#0d1117;border-bottom:1px solid #ffffff10;padding:6px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#user-bar .uinfo{display:flex;flex-direction:column;}
+#user-bar .uname{font-size:12px;color:#5dade2;}
+#user-bar .uroom{font-size:10px;color:#f5c84288;letter-spacing:1px;}
+#user-bar .ubtns{display:flex;gap:6px;flex-shrink:0;}
+#user-bar button{background:transparent;border:1px solid #ffffff18;border-radius:6px;color:#8b8b8b;font-size:10px;padding:4px 8px;}
+#sync-bar{padding:5px 16px;text-align:center;font-size:11px;display:none;}
+#sync-bar.show{display:block;background:#1a5c2a22;border-bottom:1px solid #4ade8022;color:#4ade80;}
+#sync-bar.error{display:block;background:#5c1a1a22;border-bottom:1px solid #f8717122;color:#f87171;}
+#nav{display:flex;border-bottom:1px solid #ffffff18;background:#161b22;position:sticky;top:90px;z-index:9;}
+#nav button{flex:1;padding:9px 2px;background:transparent;border:none;border-bottom:2px solid transparent;color:#8b8b8b;font-size:11px;transition:all .2s;}
+#nav button.active{background:#1a6fa822;border-bottom:2px solid #1a6fa8;color:#5dade2;font-weight:700;}
+#nav button.chat-unread:not(.active){background:#1a5c2a22;border-bottom-color:#4ade80;color:#4ade80;font-weight:900;}
+#content{padding:18px 14px 100px;}
+.sub-tabs{display:flex;gap:8px;margin-bottom:18px;}
+.sub-tab{flex:1;padding:10px;border-radius:10px;border:1px solid #ffffff18;background:#ffffff08;color:#8b8b8b;font-size:13px;text-align:center;transition:all .2s;}
+.sub-tab.active{background:#1a6fa822;border:1px solid #1a6fa844;color:#5dade2;font-weight:700;}
+.info-i{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;margin-left:5px;border-radius:50%;border:1px solid currentColor;font-size:11px;font-weight:900;line-height:1;vertical-align:middle;}
+.info-i:hover{background:#ffffff18;}
+.score-card{display:flex;align-items:center;border-radius:12px;margin-bottom:10px;padding:13px 16px;gap:12px;}
+.score-card.first{background:linear-gradient(90deg,#15436022,#1a6fa811);border:1px solid #1a6fa844;}
+.score-card.other{background:#ffffff08;border:1px solid #ffffff10;}
+.rank-badge{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;}
+.player-name{font-size:15px;font-weight:700;color:#e6d9b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.player-name.gold{color:#f5c842;}
+.rank-name-button{display:block;width:100%;padding:0;border:0;border-radius:0;background:transparent;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:4px;}
+.rank-name-button:hover{background:transparent;color:#5dade2;}
+.player-stats{font-size:11px;color:#666;margin-top:2px;}
+.player-score{font-size:26px;font-weight:900;min-width:48px;text-align:right;}
+.rank-name-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:#000b;}
+.rank-name-modal.show{display:flex;}
+.rank-name-panel{width:min(100%,390px);max-height:calc(100vh - 40px);overflow:auto;padding:20px;border:1px solid #1a6fa866;border-radius:12px;background:#161b22;box-shadow:0 18px 60px #000;}
+.rank-name-panel h2{margin:0 0 16px;color:#f5c842;font-size:19px;text-align:center;}
+.rank-name-panel input{width:100%;margin-bottom:12px;}
+.rank-name-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.rank-name-actions button{min-height:44px;padding:10px 8px;border-radius:8px;border:1px solid #ffffff18;color:#fff;font-weight:700;}
+.rank-name-close{width:100%;margin-top:9px;padding:9px;border:1px solid #ffffff18;background:#ffffff08;color:#aaa;}
+.room-settings-status{padding:14px;border-radius:10px;border:1px solid #ffffff18;background:#ffffff08;text-align:center;margin-bottom:12px;}
+.room-settings-status.unlocked{border-color:#4ade8055;background:#1a5c2a22;color:#4ade80;}
+.room-settings-status.locked{border-color:#f5c84244;color:#e6d9b8;}
+.room-settings-action{width:100%;min-height:48px;padding:11px;border:1px solid #ffffff18;color:#fff;font-weight:800;}
+.room-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.room-settings-grid button{min-height:42px;padding:9px 6px;border:1px solid #ffffff18;background:#154360;color:#fff;font-weight:700;}
+.settings-member{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #ffffff10;}
+.settings-member span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.settings-member button,.chat-delete{width:28px;height:28px;padding:0;border:1px solid #f8717144;background:#5c1a1a55;color:#f87171;}
+.hand-admin-actions{display:flex;gap:7px;margin-top:10px;}
+.hand-admin-actions button{flex:1;padding:8px;border:1px solid #ffffff18;color:#fff;font-size:11px;font-weight:700;}
+.hand-edit-grid{display:grid;gap:10px;}
+.hand-edit-grid label{font-size:11px;letter-spacing:1px;color:#8b8b8b;}
+.hand-edit-grid select,.hand-edit-grid input{width:100%;margin-top:5px;}
+.chat-delete{flex-shrink:0;border-radius:50%;}
+.game-score-editor{margin:14px 0 20px;padding:14px;border:1px solid #1a6fa855;border-radius:10px;background:#1a6fa811;}
+.game-score-edit-row{display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:10px;align-items:center;margin-top:9px;}
+.game-score-edit-row label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e6d9b8;font-size:13px;font-weight:700;}
+.game-score-edit-row input{width:100%;min-width:0;padding:9px 8px;text-align:center;}
+.game-score-edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+.game-score-edit-actions button{padding:10px;border-radius:8px;border:1px solid #ffffff18;color:#fff;font-weight:700;}
+.score-pos{color:#4ade80;}.score-neg{color:#f87171;}.score-gold{color:#f5c842;text-shadow:0 0 12px #f5c84288;}
+.section-label{font-size:11px;letter-spacing:2px;color:#8b8b8b;margin-bottom:10px;}
+.player-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.player-btn{flex:1 1 calc(50% - 4px);padding:10px 6px;border-radius:8px;border:1px solid #ffffff18;background:#ffffff08;color:#e6d9b8;font-size:13px;transition:all .15s;}
+.player-btn.active-blue{border:2px solid #1a6fa8;background:#1a6fa822;color:#5dade2;font-weight:700;}
+.player-btn.active-cyan{border:2px solid #148f77;background:#148f7722;color:#1abc9c;font-weight:700;}
+.points-block{margin-bottom:14px;}
+.round-roles{display:grid;gap:10px;margin-bottom:14px;}
+.round-role-card{background:#ffffff05;border:1px solid #ffffff10;border-radius:12px;padding:10px 9px;}
+.round-role-card .section-label{text-align:center;margin-bottom:8px;}
+.round-role-card .player-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:0;}
+.round-role-card .player-btn{width:100%;min-width:0;min-height:38px;padding:8px 5px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.player-select{width:100%;min-height:44px;padding:10px 12px;border-radius:8px;border:1px solid #ffffff18;background:#161b22;color:#e6d9b8;font-size:13px;font-weight:700;outline:none;}
+.player-select:focus{border-color:#1a6fa866;}
+.player-select.caller-select{color:#5dade2;}
+.player-select.partner-select{color:#1abc9c;}
+.name-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px;}
+.btn-load-names{background:linear-gradient(90deg,#1a5c2a,#27ae60);box-shadow:0 4px 20px #27ae6044;}
+.name-bank{background:#ffffff06;border:1px solid #1a6fa833;border-radius:12px;padding:14px;margin-bottom:18px;}
+.name-bank-row{display:flex;gap:8px;}
+.name-bank-row input{flex:1;min-width:0;}
+.name-bank-row button{border:none;border-radius:10px;background:#1a6fa8;color:#fff;font-size:12px;font-weight:700;padding:0 12px;white-space:nowrap;}
+.saved-name-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+.saved-name-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #ffffff18;background:#ffffff08;border-radius:999px;color:#e6d9b8;font-size:12px;font-weight:700;padding:6px 8px 6px 10px;}
+.saved-name-pill button{width:20px;height:20px;border:none;border-radius:50%;background:#5c1a1a;color:#f87171;font-size:14px;line-height:1;}
+.saved-name-edit{display:grid;gap:8px;margin-top:16px;}
+.participant-name-pill{border:1px solid #1a6fa855;background:#0f2a3d;color:#7cc7ff;border-radius:999px;font-size:12px;font-weight:800;padding:7px 10px;}
+.btn-add-members{margin-top:12px;border:none;border-radius:10px;background:#1a6fa8;color:#fff;font-size:12px;font-weight:900;padding:11px;width:100%;}
+.name-empty{font-size:12px;color:#666;margin-top:10px;text-align:center;}
+.name-slot{margin-bottom:14px;}
+.name-slot .player-select{color:#e6d9b8;}
+input[type=number]{width:100%;padding:13px 14px;background:#ffffff0a;border:1px solid #ffffff18;border-radius:10px;color:#e6d9b8;font-size:20px;outline:none;}
+input[type=number].valid{border:1px solid #1a6fa866;}
+.num-pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px;}
+.num-pad button{height:40px;border-radius:8px;border:1px solid #ffffff18;background:#ffffff08;color:#e6d9b8;font-size:18px;font-weight:900;}
+.num-pad .wide{grid-column:span 2;font-size:13px;letter-spacing:1px;color:#5dade2;}
+input[type=text]{width:100%;padding:12px 14px;background:#ffffff0a;border:1px solid #ffffff18;border-radius:10px;color:#e6d9b8;font-size:15px;outline:none;}
+.room-name-field input{font-size:14px;padding:11px 12px;}
+.result-btns{display:flex;gap:10px;}
+.result-btn{flex:1;padding:12px 8px;border-radius:10px;border:1px solid #ffffff18;background:#ffffff08;color:#888;font-size:17px;font-weight:900;transition:all .15s;}
+.result-btn.win{border:2px solid #4ade80;background:#1a5c2a;color:#4ade80;}
+.result-btn.lose{border:2px solid #f87171;background:#5c1a1a;color:#f87171;}
+.preview{margin-top:12px;padding:12px 14px;border-radius:8px;font-size:12px;}
+.preview.win{background:#1a5c2a22;border:1px solid #4ade8033;}
+.preview.lose{background:#5c1a1a22;border:1px solid #f8717133;}
+.badge{display:inline-block;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:700;letter-spacing:1px;color:#fff;}
+.result-badge{display:inline-block;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:700;letter-spacing:1px;}
+.result-badge.w{background:#1a5c2a;color:#4ade80;border:1px solid #4ade8044;}
+.result-badge.l{background:#5c1a1a;color:#f87171;border:1px solid #f8717144;}
+.error-box{color:#5dade2;font-size:13px;margin-bottom:14px;padding:10px 14px;background:#1a6fa811;border-radius:8px;border:1px solid #1a6fa833;}
+.btn-primary{width:100%;padding:15px;background:linear-gradient(90deg,#154360,#1a6fa8);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;letter-spacing:1px;box-shadow:0 4px 20px #1a6fa844;margin-top:8px;}
+.btn-share{width:100%;margin-top:10px;padding:13px;background:linear-gradient(90deg,#1a5c2a,#27ae60);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;letter-spacing:1px;}
+.btn-reset{width:100%;margin-top:10px;padding:12px;background:transparent;border:1px solid #1a6fa844;color:#5dade2;border-radius:10px;font-size:13px;letter-spacing:1px;}
+.history-card{border-radius:12px;padding:13px 15px;margin-bottom:10px;}
+.history-card.won{background:#1a5c2a11;border:1px solid #4ade8022;}
+.history-card.lost{background:#5c1a1a11;border:1px solid #f8717122;}
+.chat-box{background:#ffffff06;border:1px solid #1a6fa833;border-radius:12px;padding:14px;}
+.chat-list{display:flex;flex-direction:column;gap:10px;max-height:48vh;overflow:auto;padding:2px 2px 12px;}
+.chat-message{max-width:85%;padding:9px 11px;border-radius:12px;background:#ffffff08;border:1px solid #ffffff10;}
+.chat-message.mine{align-self:flex-end;background:#1a6fa822;border-color:#1a6fa855;}
+.chat-meta{font-size:10px;color:#8b8b8b;margin-bottom:4px;display:flex;gap:8px;justify-content:space-between;}
+.chat-name{color:#5dade2;font-weight:800;}
+.chat-text{font-size:13px;color:#e6d9b8;line-height:1.35;word-break:break-word;}
+.chat-compose{display:flex;gap:8px;margin-top:12px;}
+.chat-compose input{flex:1;min-width:0;padding:12px;background:#ffffff0a;border:1px solid #ffffff18;border-radius:10px;color:#e6d9b8;font-size:14px;outline:none;}
+.chat-compose input:focus{border-color:#1a6fa866;}
+.chat-compose button{border:none;border-radius:10px;background:#1a6fa8;color:#fff;font-size:12px;font-weight:900;padding:0 14px;white-space:nowrap;}
+.chat-error{font-size:12px;color:#f87171;margin-top:10px;text-align:center;}
+.month-selector{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:#ffffff08;border:1px solid #ffffff15;border-radius:10px;padding:10px 14px;}
+.month-selector button{background:transparent;border:none;color:#5dade2;font-size:20px;padding:0 8px;}
+.month-selector span{font-size:14px;font-weight:700;color:#e6d9b8;letter-spacing:1px;}
+#footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#0d1117ee;border-top:1px solid #ffffff10;padding:7px 16px;text-align:center;font-size:11px;color:#555;letter-spacing:1px;}
+.empty{text-align:center;color:#555;padding-top:40px;font-size:14px;}
+.theme-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.theme-choice button{min-height:44px;padding:10px 6px;border:1px solid #ffffff18;background:#ffffff08;color:#8b8b8b;font-weight:800;}
+.theme-choice button.active{border-color:#1a6fa866;background:#1a6fa822;color:#5dade2;}
+body.theme-light{background:linear-gradient(145deg,#f8fbff 0%,#eef6fb 58%,#f7f0df 100%);color:#243241;}
+body.theme-light .auth-logo h1,body.theme-light .room-logo h2{color:#163247;}
+body.theme-light .auth-box,body.theme-light .room-box,body.theme-light .name-bank,body.theme-light .chat-box,body.theme-light .round-role-card,body.theme-light .room-settings-status,body.theme-light .game-score-editor{background:#ffffffd9;border-color:#c5d9e8;box-shadow:0 8px 24px #18445f14;}
+body.theme-light .auth-tab,body.theme-light .sub-tab,body.theme-light .player-btn,body.theme-light .result-btn,body.theme-light .num-pad button,body.theme-light .saved-name-pill,body.theme-light .chat-message,body.theme-light .active-room,body.theme-light .room-member,body.theme-light .month-selector,body.theme-light .score-card.other,body.theme-light .theme-choice button{background:#ffffffcc;border-color:#d9e5ee;color:#516071;}
+body.theme-light .auth-tab.active,body.theme-light .sub-tab.active,body.theme-light #nav button.active,body.theme-light .score-card.first,body.theme-light .theme-choice button.active{background:#e6f3fb;border-color:#8fc3e5;color:#17689a;}
+body.theme-light .auth-field label,body.theme-light .room-box h3,body.theme-light .room-name-field label,body.theme-light .section-label,body.theme-light .hand-edit-grid label,body.theme-light .chat-meta,body.theme-light .active-room .meta,body.theme-light .room-code-display .label,body.theme-light .player-stats,body.theme-light .empty,body.theme-light .name-empty{color:#667587;}
+body.theme-light .auth-field input,body.theme-light .join-input,body.theme-light input[type=number],body.theme-light input[type=text],body.theme-light .chat-compose input,body.theme-light .player-select{background:#fff;border-color:#cfdde8;color:#263444;}
+body.theme-light .auth-field input:focus,body.theme-light .join-input:focus,body.theme-light input[type=number].valid,body.theme-light input[type=text]:focus,body.theme-light .chat-compose input:focus,body.theme-light .player-select:focus{border-color:#2f8fc5;box-shadow:0 0 0 3px #2f8fc51b;}
+body.theme-light .btn-google,body.theme-light .btn-apple,body.theme-light .btn-reset,body.theme-light .rank-name-close{background:#ffffff;border-color:#cfdde8;color:#263444;}
+body.theme-light .room-code-display,body.theme-light #user-bar,body.theme-light #footer{background:#f4f8fb;border-color:#dbe7ef;}
+body.theme-light #header{background:linear-gradient(90deg,#d8edf9 0%,#9ed2f0 50%,#d8edf9 100%);box-shadow:0 4px 22px #2f8fc52b;}
+body.theme-light #header h1{color:#123247;text-shadow:0 1px 0 #ffffffcc;}
+body.theme-light #header .sub,body.theme-light #header .suits{color:#315f7c;}
+body.theme-light #nav{background:#f8fbff;border-bottom-color:#dbe7ef;}
+body.theme-light #nav button{color:#6a7684;}
+body.theme-light #nav button.chat-unread:not(.active){background:#e8f8ef;border-bottom-color:#1e9d58;color:#168146;}
+body.theme-light .score-card{box-shadow:0 8px 20px #16324712;}
+body.theme-light .player-name,body.theme-light .active-room .name,body.theme-light .game-score-edit-row label,body.theme-light .chat-text,body.theme-light .saved-name-pill,body.theme-light .name-slot .player-select{color:#243241;}
+body.theme-light .player-name.gold{color:#9b7200;}
+body.theme-light .score-gold{color:#b8860b;text-shadow:0 0 10px #f5c84255;}
+body.theme-light .score-pos{color:#17924d;}
+body.theme-light .score-neg{color:#c93838;}
+body.theme-light .room-code-display .code,body.theme-light .active-room .code{color:#b8860b;text-shadow:none;}
+body.theme-light .rank-name-panel{background:#ffffff;border-color:#8fc3e5;box-shadow:0 18px 60px #16324735;}
+body.theme-light .preview.win,body.theme-light .history-card.won{background:#edf9f1;border-color:#98d7ad;}
+body.theme-light .preview.lose,body.theme-light .history-card.lost{background:#fff0f0;border-color:#efb0b0;}
+body.theme-light .result-badge.w{background:#ddf5e6;color:#177a42;border-color:#8bd3a3;}
+body.theme-light .result-badge.l{background:#ffe6e6;color:#bf3030;border-color:#efaaaa;}
+body.theme-light .result-btn.win{background:#e2f6ea;color:#177a42;}
+body.theme-light .result-btn.lose{background:#ffe8e8;color:#bf3030;}
+body.theme-light .chat-message.mine{background:#e3f1fb;border-color:#9ecce8;}
+body.theme-light .participant-name-pill{background:#e7f4fc;color:#17689a;border-color:#9bcbe8;}
+body.theme-light [style*="color:#8b8b8b"]{color:#667587!important;}
+body.theme-light [style*="color:#e6d9b8"]{color:#243241!important;}
+body.theme-light [style*="color:#a0a0a0"]{color:#667587!important;}
+body.theme-light [style*="color:#f5c842"]{color:#9b7200!important;}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-logo">
+    <div class="suits nap-aces"><img src="assets/assi-napoletani.png" alt="Assi del mazzo napoletano"/></div>
+    <h1>Punteggi briscola a 5</h1>
+    <div class="sub">SEGNAPUNTI ONLINE</div>
+  </div>
+  <div class="auth-box">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="setAuthTab('login')">Accedi</button>
+      <button class="auth-tab" onclick="setAuthTab('register')">Registrati</button>
+    </div>
+    <div class="auth-field"><label>EMAIL</label><input type="email" id="auth-email" placeholder="nome@email.com"/></div>
+    <div class="auth-field"><label>PASSWORD</label><input type="password" id="auth-password" placeholder="••••••••"/></div>
+    <div class="auth-field" id="auth-name-field" style="display:none"><label>NOME</label><input type="text" id="auth-name" placeholder="Es. Mario"/></div>
+    <button class="btn-auth" id="auth-btn" onclick="handleAuth()">ACCEDI</button>
+    <button class="btn-google" onclick="handleGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.7 0 6.7 5.5 2.7 13.5l7.8 6.1C12.4 13.3 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.4A14.6 14.6 0 0 1 9.5 24c0-1.5.3-3 .7-4.4L2.4 13.5A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.6l8-6.2z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.3 0-11.6-3.8-13.5-9.3l-7.9 6.1C6.6 42.5 14.7 48 24 48z"/></svg>
+      Continua con Google
+    </button>
+    <button class="btn-apple" onclick="handleApple()">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.6 12.6c0-2 1.6-3 1.7-3.1-1-.1-1.8-.6-2.2-1.1-.9-.9-2.1-.9-2.6-.9-1.1 0-2.1.6-2.7.6-.5 0-1.4-.6-2.4-.6-1.2 0-2.4.7-3.1 1.8-1.3 2.3-.3 5.8 1 7.7.6.9 1.4 2 2.4 1.9.9 0 1.3-.6 2.4-.6s1.4.6 2.4.6 1.7-.9 2.3-1.8c.7-1 1-2 1-2-.1 0-2.2-.9-2.2-3.5zM13 6.4c.5-.6.9-1.5.8-2.4-.8 0-1.7.5-2.2 1.1-.5.6-.9 1.5-.8 2.3.8.1 1.6-.4 2.2-1z"/></svg>
+      Continua con Apple
+    </button>
+    <div id="auth-msg"></div>
+  </div>
+</div>
+
+<!-- STANZA -->
+<div id="room-screen" style="display:none">
+  <div class="room-logo">
+    <div class="suits nap-aces"><img src="assets/assi-napoletani.png" alt="Assi del mazzo napoletano"/></div>
+    <h2>Punteggi briscola a 5</h2>
+    <div class="room-user" id="room-user-label"></div>
+  </div>
+
+  <!-- Crea stanza -->
+  <div class="room-box" id="box-create">
+    <h3>CREA NUOVA STANZA</h3>
+    <div class="room-name-field">
+      <label>NOME STANZA</label>
+      <input type="text" id="room-name-input" maxlength="24" placeholder="Es. Tavolo del venerdi"/>
+    </div>
+    <button class="btn-room btn-create" onclick="createRoom()">🃏 Crea Stanza</button>
+    <div id="create-error"></div>
+    <div id="room-created" style="display:none">
+      <div class="room-code-display">
+        <div class="label">CODICE STANZA</div>
+        <div class="code" id="room-code-display"></div>
+      </div>
+      <button class="btn-room btn-share-room" onclick="shareRoomCode()" style="margin-top:4px">📤 Condividi Codice</button>
+      <button class="btn-room btn-enter" onclick="enterRoom()" style="margin-top:4px">▶ Entra nella Stanza</button>
+      <div id="room-members-list" class="room-members" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <div class="room-divider">— oppure —</div>
+
+  <div class="room-box">
+    <h3>STANZE ATTIVE</h3>
+    <div id="active-rooms-list"><div class="empty" style="padding:8px 0">Caricamento...</div></div>
+  </div>
+
+  <!-- Unisciti -->
+  <div class="room-box">
+    <h3>UNISCITI A UNA STANZA</h3>
+    <input class="join-input" type="text" id="join-code" maxlength="6" placeholder="CODICE" oninput="this.value=this.value.toUpperCase()"/>
+    <button class="btn-room btn-join" onclick="joinRoom()">🤝 Unisciti</button>
+    <div id="join-error"></div>
+  </div>
+
+  <button class="btn-logout-small" onclick="handleLogout()">← Esci dall'account</button>
+</div>
+
+<!-- APP -->
+<div id="main-app" style="display:none">
+  <div id="header">
+    <div class="suits nap-aces"><img src="assets/assi-napoletani.png" alt="Assi del mazzo napoletano"/></div>
+    <h1>Punteggi briscola a 5</h1>
+    <div class="sub" id="header-room-label">SEGNAPUNTI</div>
+  </div>
+  <div id="user-bar">
+    <div class="uinfo">
+      <span class="uname" id="user-email-label">—</span>
+      <span class="uroom" id="user-room-label"></span>
+    </div>
+    <div class="ubtns">
+      <button onclick="showRoomScreen()">🚪 Stanza</button>
+      <button title="Impostazioni stanza" aria-label="Impostazioni stanza" onclick="openRoomSettings()">⚙</button>
+      <button onclick="handleLogout()">Esci</button>
+    </div>
+  </div>
+  <div id="sync-bar"></div>
+  <div id="nav">
+    <button class="active" onclick="showScreen('scoreboard')">Classifica</button>
+    <button onclick="showScreen('newround')">+ Mano</button>
+    <button onclick="showScreen('history')">Storico</button>
+    <button onclick="showScreen('editnames')">Nomi</button>
+    <button onclick="showScreen('chat')">Chat <span class="info-i" onclick="event.stopPropagation();showAppInfo()">i</span></button>
+  </div>
+  <div id="content"></div>
+  <div id="footer">61–79 → ±2 pt &nbsp;|&nbsp; 80–120 → ±4 pt &nbsp;|&nbsp; compagno → metà</div>
+</div>
+
+<div id="rank-name-modal" class="rank-name-modal" onclick="if(event.target===this)closeRankNameMenu()">
+  <div class="rank-name-panel" role="dialog" aria-modal="true" aria-labelledby="rank-name-title">
+    <h2 id="rank-name-title">Gestisci giocatore</h2>
+    <input type="text" id="rank-name-input" maxlength="20" placeholder="Nome giocatore" onkeydown="if(event.key==='Enter')modifyRankPlayerName()"/>
+    <div class="rank-name-actions">
+      <button type="button" style="background:#154360" onclick="modifyRankPlayerName()">MODIFICA</button>
+      <button type="button" style="background:#7f1d1d" onclick="deleteRankPlayerName()">ELIMINA</button>
+    </div>
+    <button type="button" class="rank-name-close" onclick="closeRankNameMenu()">ANNULLA</button>
+  </div>
+</div>
+
+<div id="room-settings-modal" class="rank-name-modal" onclick="if(event.target===this)closeRoomSettings()">
+  <div class="rank-name-panel" role="dialog" aria-modal="true" aria-labelledby="room-settings-title">
+    <h2 id="room-settings-title">Impostazioni stanza</h2>
+    <div id="room-settings-content"></div>
+    <button type="button" class="rank-name-close" onclick="closeRoomSettings()">CHIUDI</button>
+  </div>
+</div>
+
+<div id="hand-edit-modal" class="rank-name-modal" onclick="if(event.target===this)closeHandEditor()">
+  <div class="rank-name-panel" role="dialog" aria-modal="true" aria-labelledby="hand-edit-title">
+    <h2 id="hand-edit-title">Modifica mano</h2>
+    <div id="hand-edit-content"></div>
+    <button type="button" class="rank-name-close" onclick="closeHandEditor()">ANNULLA</button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyA_8yIjNtzUVbN7Y1J4ouwcSoLpsno9NdY",
+  authDomain: "punteggiobriscola-f5ad5.firebaseapp.com",
+  projectId: "punteggiobriscola-f5ad5",
+  storageBucket: "punteggiobriscola-f5ad5.firebasestorage.app",
+  messagingSenderId: "467450831856",
+  appId: "1:467450831856:web:7b995928790c90e9553335",
+  measurementId: "G-MK8V9XEW34"
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+
+let firebaseReady=false, auth, db;
+try{
+  if(window.firebase&&firebaseConfig.apiKey!=="INSERISCI_API_KEY"){
+    if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+    auth=firebase.auth();
+    auth.languageCode='it';
+    db=firebase.firestore();
+    firebaseReady=true;
+  }
+}catch(e){console.error('Errore Firebase:',e);}
+
+const DEFAULT_NAMES=["Giocatore 1","Giocatore 2","Giocatore 3","Giocatore 4","Giocatore 5"];
+const MESI=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const APP_VERSION="2026-07-06-role-win-loss-stats-1";
+let players=lstore('players')||DEFAULT_NAMES.map((n,i)=>({id:i,name:n,score:0}));
+let history=lstore('history')||[];
+let gameHistory=lstore('gameHistory')||[];
+let savedNames=mergeNames(lstore('savedNames')||[],players.map(p=>p.name).filter(n=>!DEFAULT_NAMES.includes(n)));
+let removedNames=mergeNames(lstore('removedNames')||[]);
+let round=normalizeRound(lstore('round'));
+let actionLog=lstore('actionLog')||[];
+let appTheme=lstore('theme')==='light'?'light':'dark';
+let screen='scoreboard', classTab='giornaliera', historyTab='mani', selectedGameIndex=null, gameScoreEditIndex=null, handEditTarget=null;
+let viewMonth=new Date().getMonth(), viewYear=new Date().getFullYear(), viewDay=new Date();
+let currentUser=null, currentRoomId=null, currentRoomName='', currentRoomOwner='', roomListener=null;
+let roomMemberNames=[];
+let roomMembers=[];
+let chatMessages=[];
+let chatUnread=false;
+let authTab='login';
+let syncTimer=null, applyingRemote=false;
+let updateNoticeScheduled=false;
+let ownerEditsUnlockedUntil=0, ownerEditLockTimer=null, ownerSettingsTimer=null;
+
+function sstore(k,v){try{localStorage.setItem('briscola5sir_'+k,JSON.stringify(v));}catch(e){}}
+function lstore(k){try{const v=localStorage.getItem('briscola5sir_'+k);return v?JSON.parse(v):null;}catch(e){return null;}}
+function saveAll(){sstore('players',players);sstore('history',history);sstore('gameHistory',gameHistory);sstore('savedNames',savedNames);sstore('removedNames',removedNames);sstore('round',round);sstore('actionLog',actionLog);}
+function applyTheme(){
+  document.body.classList.toggle('theme-light',appTheme==='light');
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.setAttribute('content',appTheme==='light'?'#eaf4fb':'#1a5276');
+}
+function setAppTheme(theme){
+  appTheme=theme==='light'?'light':'dark';
+  sstore('theme',appTheme);
+  applyTheme();
+  renderRoomSettings();
+}
+applyTheme();
+function hasSavedAppData(){
+  try{return Object.keys(localStorage).some(k=>k.startsWith('briscola5sir_')&&k!=='briscola5sir_appVersion');}
+  catch(e){return false;}
+}
+function checkUpdateNotice(){
+  if(updateNoticeScheduled)return;
+  updateNoticeScheduled=true;
+  setTimeout(()=>{
+    const previous=lstore('appVersion');
+    const shouldWarn=(previous&&previous!==APP_VERSION)||(!previous&&hasSavedAppData());
+    sstore('appVersion',APP_VERSION);
+    if(!shouldWarn)return;
+    alert('Aggiornamento disponibile.\n\nSe non vedi le novità, chiudi e riapri l app. Se ancora non cambia, cancella la cache dell app per visualizzare l aggiornamento.');
+  },900);
+}
+
+window.addEventListener('beforeunload',()=>{saveAll();if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();});
+window.addEventListener('pagehide',()=>{saveAll();if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){saveAll();if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();}});
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function setAuthTab(t){
+  authTab=t;
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('active',['login','register'][i]===t));
+  document.getElementById('auth-name-field').style.display=t==='register'?'block':'none';
+  document.getElementById('auth-btn').textContent=t==='login'?'ACCEDI':'REGISTRATI';
+  document.getElementById('auth-msg').innerHTML='';
+}
+function showAuthMsg(msg,ok=false){
+  document.getElementById('auth-msg').innerHTML=`<div class="${ok?'auth-success':'auth-error'}">${msg}</div>`;
+}
+function authErrorMessage(e){
+  const m={
+    'auth/account-exists-with-different-credential':'Esiste gia un account con questa email. Accedi con il metodo usato in precedenza.',
+    'auth/cancelled-popup-request':'Accesso Google annullato: era gia aperta un altra finestra.',
+    'auth/configuration-not-found':'Firebase Authentication non e ancora configurato. In Firebase Console apri Authentication, premi Inizia e abilita Email/Password, Google e Apple.',
+    'auth/email-already-in-use':'Email gia in uso.',
+    'auth/invalid-credential':'Email o password non corretti.',
+    'auth/invalid-email':'Email non valida.',
+    'auth/network-request-failed':'Connessione assente o Firebase non raggiungibile.',
+    'auth/operation-not-allowed':'Metodo di accesso non abilitato in Firebase. Abilita Email/Password, Google o Apple in Authentication.',
+    'auth/popup-blocked':'Popup bloccato dal browser. Consenti i popup per questa pagina e riprova.',
+    'auth/popup-closed-by-user':'Finestra Google chiusa prima di completare l accesso.',
+    'auth/provider-already-linked':'Questo accesso Apple e gia collegato al tuo account.',
+    'auth/unauthorized-domain':'Dominio non autorizzato in Firebase. Apri l app da localhost/hosting e aggiungi quel dominio in Authentication.',
+    'auth/user-not-found':'Utente non trovato.',
+    'auth/weak-password':'Password troppo corta (min. 6).',
+    'auth/wrong-password':'Password errata.'
+  };
+  return m[e&&e.code]||(e&&e.message)||'Accesso non riuscito.';
+}
+async function handleAuth(){
+  if(!firebaseReady)return showAuthMsg('Configura Firebase prima di procedere.');
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-password').value;
+  const name=document.getElementById('auth-name').value.trim();
+  if(!email||!pass)return showAuthMsg('Inserisci email e password.');
+  try{
+    showAuthMsg(authTab==='login'?'Accesso in corso...':'Registrazione in corso...',true);
+    if(authTab==='login'){await auth.signInWithEmailAndPassword(email,pass);}
+    else{
+      if(!name)return showAuthMsg('Inserisci il tuo nome.');
+      const c=await auth.createUserWithEmailAndPassword(email,pass);
+      await c.user.updateProfile({displayName:name});
+    }
+  }catch(e){
+    const m={'auth/user-not-found':'Utente non trovato.','auth/wrong-password':'Password errata.','auth/email-already-in-use':'Email già in uso.','auth/weak-password':'Password troppo corta (min. 6).','auth/invalid-email':'Email non valida.'};
+    showAuthMsg(authErrorMessage(e));
+  }
+}
+async function handleGoogle(){
+  if(!firebaseReady)return showAuthMsg('Configura Firebase prima di procedere.');
+  if(location.protocol==='file:'){
+    return showAuthMsg('Per accedere con Google devi aprire l app da Firebase Hosting o da http://localhost, non come file locale.');
+  }
+  const provider=new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
+  try{
+    showAuthMsg('Apro Google...',true);
+    await auth.signInWithPopup(provider);
+  }catch(e){
+    if(e&&e.code==='auth/popup-blocked'){
+      showAuthMsg('Popup bloccato: provo con reindirizzamento Google...',true);
+      try{await auth.signInWithRedirect(provider);}
+      catch(err){showAuthMsg(authErrorMessage(err));}
+      return;
+    }
+    showAuthMsg(authErrorMessage(e));
+  }
+}
+async function handleApple(){
+  if(!firebaseReady)return showAuthMsg('Configura Firebase prima di procedere.');
+  if(location.protocol==='file:'){
+    return showAuthMsg('Per accedere con Apple devi aprire l app da Firebase Hosting o da http://localhost, non come file locale.');
+  }
+  const provider=new firebase.auth.OAuthProvider('apple.com');
+  provider.addScope('email');
+  provider.addScope('name');
+  provider.setCustomParameters({locale:'it'});
+  try{
+    showAuthMsg('Apro Apple...',true);
+    await auth.signInWithPopup(provider);
+  }catch(e){
+    if(e&&e.code==='auth/popup-blocked'){
+      showAuthMsg('Popup bloccato: provo con reindirizzamento Apple...',true);
+      try{await auth.signInWithRedirect(provider);}
+      catch(err){showAuthMsg(authErrorMessage(err));}
+      return;
+    }
+    showAuthMsg(authErrorMessage(e));
+  }
+}
+async function handleLogout(){
+  if(!confirm('Vuoi uscire?'))return;
+  if(roomListener){roomListener();roomListener=null;}
+  saveAll();
+  if(firebaseReady&&auth.currentUser)await auth.signOut();
+  currentUser=null;currentRoomId=null;currentRoomName='';roomMemberNames=[];roomMembers=[];chatMessages=[];chatUnread=false;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('room-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+}
+
+if(firebaseReady){
+  auth.onAuthStateChanged(user=>{
+    if(user){
+      currentUser=user;
+      document.getElementById('auth-screen').style.display='none';
+      document.getElementById('room-screen').style.display='flex';
+      document.getElementById('room-user-label').textContent='👤 '+(user.displayName||user.email);
+      loadActiveRooms();
+      // Ripristina stanza salvata
+      const savedRoom=lstore('roomId');
+      if(savedRoom){currentRoomId=savedRoom;enterRoomDirect();}
+      checkUpdateNotice();
+    }
+  });
+} else {
+  // Modalità offline diretta
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('room-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('user-email-label').textContent='🔒 Offline';
+  render();
+  checkUpdateNotice();
+}
+
+// ── STANZA ────────────────────────────────────────────────────────────────
+function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase();}
+
+function withTimeout(promise,ms,message){
+  return Promise.race([
+    promise,
+    new Promise((_,reject)=>setTimeout(()=>reject({code:'app/timeout',message}),ms))
+  ]);
+}
+
+async function createRoom(){
+  if(!firebaseReady)return showCreateError('Firebase non e configurato.');
+  if(!currentUser)return showCreateError('Accedi prima di creare una stanza.');
+  const btn=document.getElementById('box-create').querySelector('.btn-create');
+  const oldText=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Creo stanza...';
+  showCreateError('Creo la stanza...',true);
+  try{
+    const code=genCode();
+    const roomName=cleanRoomName(document.getElementById('room-name-input').value);
+    const fresh=freshRoomState();
+    const roomRef=db.collection('stanze').doc(code);
+    await withTimeout(roomRef.set({
+      code,
+      roomName,
+      owner:currentUser.uid,
+      ownerName:currentUser.displayName||currentUser.email,
+      members:{[currentUser.uid]:{name:currentUser.displayName||currentUser.email,joinedAt:Date.now()}},
+      memberIds:[currentUser.uid],
+      players:fresh.players,history:fresh.history,gameHistory:fresh.gameHistory,savedNames:fresh.savedNames,removedNames:fresh.removedNames,round:fresh.round,chatMessages:fresh.chatMessages,actionLog:fresh.actionLog,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    }),12000,'Firestore non risponde. Controlla che Firestore Database sia creato e che le regole permettano agli utenti autenticati di scrivere.');
+    players=fresh.players;
+    history=fresh.history;
+    gameHistory=fresh.gameHistory;
+    savedNames=fresh.savedNames;
+    removedNames=fresh.removedNames;
+    actionLog=fresh.actionLog;
+    round=fresh.round;
+    chatMessages=fresh.chatMessages;
+    saveAll();
+    currentRoomId=code;
+    currentRoomName=roomName;
+    currentRoomOwner=currentUser.uid;
+    document.getElementById('room-code-display').textContent=code;
+    document.getElementById('room-created').style.display='block';
+    btn.style.display='none';
+    showCreateError('');
+    loadActiveRooms();
+    listenRoomMembers(code);
+  }catch(e){
+    console.error('Errore creazione stanza:',e);
+    showCreateError(roomErrorMessage(e));
+  }finally{
+    if(!currentRoomId){
+      btn.disabled=false;
+      btn.textContent=oldText;
+    }
+  }
+}
+
+function roomErrorMessage(e){
+  const code=e&&e.code;
+  const msg=(e&&e.message)||'';
+  if(code==='app/timeout')return msg;
+  if(code==='permission-denied'||msg.includes('Missing or insufficient permissions')){
+    return 'Firestore blocca la creazione della stanza. In Firebase Console controlla Firestore Database e le Regole.';
+  }
+  if(code==='failed-precondition'||msg.includes('Cloud Firestore API')||msg.includes('database')){
+    return 'Firestore Database non sembra ancora attivo. In Firebase Console apri Firestore Database e crea il database.';
+  }
+  if(code==='unavailable')return 'Firebase non e raggiungibile. Controlla la connessione e riprova.';
+  return 'Errore creazione stanza: '+msg;
+}
+
+function showCreateError(msg,ok=false){
+  const el=document.getElementById('create-error');
+  if(!el)return;
+  el.innerHTML=msg?`<div class="${ok?'room-success':'room-error'}">${msg}</div>`:'';
+}
+
+function cleanRoomName(name){
+  return String(name||'').replace(/\s+/g,' ').trim().slice(0,24);
+}
+
+async function loadActiveRooms(){
+  const el=document.getElementById('active-rooms-list');
+  if(!el)return;
+  if(!currentUser||!firebaseReady){
+    el.innerHTML='<div class="empty" style="padding:8px 0">Accedi per vedere le tue stanze.</div>';
+    return;
+  }
+  el.innerHTML='<div class="empty" style="padding:8px 0">Caricamento...</div>';
+  try{
+    const snaps=await withTimeout(
+      Promise.all([
+        db.collection('stanze').where('owner','==',currentUser.uid).get(),
+        db.collection('stanze').where('memberIds','array-contains',currentUser.uid).get()
+      ]),
+      10000,
+      'Non riesco a caricare le stanze attive. Controlla Firestore Database e le regole.'
+    );
+    const byId={};
+    snaps.forEach(snap=>snap.forEach(doc=>{byId[doc.id]={id:doc.id,...doc.data()};}));
+    const rooms=Object.values(byId).filter(r=>(r.memberIds||[]).includes(currentUser.uid)||(r.members&&r.members[currentUser.uid]));
+    rooms.sort((a,b)=>roomTimeValue(b)-roomTimeValue(a));
+    if(!rooms.length){
+      el.innerHTML='<div class="empty" style="padding:8px 0">Nessuna stanza attiva.</div>';
+      return;
+    }
+    el.innerHTML=rooms.map(r=>{
+      const members=Object.keys(r.members||{}).length;
+      const roomName=cleanRoomName(r.roomName);
+      return `<div class="active-room">
+        <div>
+          ${roomName?`<div class="name">${esc(roomName)}</div>`:''}
+          <div class="code">${esc(r.code||r.id)}</div>
+          <div class="meta">${members} membr${members===1?'o':'i'}${roomDateLabel(r)?' · '+roomDateLabel(r):''}</div>
+        </div>
+        <div class="actions">
+          <button onclick="openActiveRoom('${esc(r.code||r.id)}')">Entra</button>
+          <button class="leave" title="Abbandona stanza" onclick="leaveActiveRoom('${esc(r.code||r.id)}')">Abbandona</button>
+          ${r.owner===currentUser.uid?`<button class="delete" title="Elimina stanza" onclick="deleteActiveRoom('${esc(r.code||r.id)}')">x</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    console.error('Errore stanze attive:',e);
+    el.innerHTML=`<div class="room-error">${roomErrorMessage(e)}</div>`;
+  }
+}
+
+function roomTimeValue(room){
+  const t=room.updatedAt||room.createdAt;
+  if(t&&typeof t.toMillis==='function')return t.toMillis();
+  if(t&&typeof t.seconds==='number')return t.seconds*1000;
+  return 0;
+}
+
+function roomDateLabel(room){
+  const ms=roomTimeValue(room);
+  return ms?new Date(ms).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+}
+
+async function openActiveRoom(code){
+  if(!currentUser||!firebaseReady)return;
+  const el=document.getElementById('active-rooms-list');
+  if(el)el.innerHTML='<div class="empty" style="padding:8px 0">Apro stanza...</div>';
+  try{
+    const ref=db.collection('stanze').doc(code);
+    const doc=await withTimeout(ref.get(),10000,'Non riesco ad aprire la stanza. Controlla Firestore Database e le regole.');
+    if(!doc.exists){
+      if(el)el.innerHTML='<div class="room-error">Stanza non trovata.</div>';
+      return;
+    }
+    const data=doc.data();
+    currentRoomOwner=data.owner||'';
+    if(data.players)players=data.players;
+    if(data.history)history=data.history;
+    if(data.gameHistory)gameHistory=data.gameHistory;
+    actionLog=data.actionLog||[];
+    if(data.savedNames)savedNames=data.savedNames;
+    removedNames=mergeNames(data.removedNames||[]);
+    if(data.round)round=normalizeRound(data.round);
+    chatMessages=normalizeChatMessages(data.chatMessages);
+    currentRoomName=cleanRoomName(data.roomName);
+    saveAll();
+    currentRoomId=code;
+    sstore('roomId',code);
+    enterRoomDirect();
+  }catch(e){
+    console.error('Errore apertura stanza:',e);
+    if(el)el.innerHTML=`<div class="room-error">${roomErrorMessage(e)}</div>`;
+  }
+}
+
+async function deleteActiveRoom(code){
+  if(!currentUser||!firebaseReady)return;
+  if(!confirm('Vuoi eliminare la stanza '+code+'?'))return;
+  const el=document.getElementById('active-rooms-list');
+  try{
+    if(el)el.innerHTML='<div class="empty" style="padding:8px 0">Elimino stanza...</div>';
+    const ref=db.collection('stanze').doc(code);
+    const doc=await withTimeout(ref.get(),10000,'Non riesco a controllare la stanza. Riprova tra poco.');
+    if(!doc.exists){
+      await loadActiveRooms();
+      return;
+    }
+    const data=doc.data();
+    if(data.owner!==currentUser.uid){
+      if(el)el.innerHTML='<div class="room-error">Puoi eliminare solo le stanze create da te.</div>';
+      return;
+    }
+    await withTimeout(ref.delete(),10000,'Non riesco a eliminare la stanza. Controlla Firestore Database e le regole.');
+    if(currentRoomId===code){
+      currentRoomId=null;
+      currentRoomName='';
+      currentRoomOwner='';
+      chatMessages=[];chatUnread=false;
+      sstore('roomId',null);
+    }
+    await loadActiveRooms();
+  }catch(e){
+    console.error('Errore eliminazione stanza:',e);
+    if(el)el.innerHTML=`<div class="room-error">${roomErrorMessage(e)}</div>`;
+  }
+}
+
+async function leaveActiveRoom(code){
+  if(!currentUser||!firebaseReady)return;
+  if(!confirm('Vuoi abbandonare la stanza '+code+'?'))return;
+  const el=document.getElementById('active-rooms-list');
+  try{
+    if(el)el.innerHTML='<div class="empty" style="padding:8px 0">Abbandono stanza...</div>';
+    const ref=db.collection('stanze').doc(code);
+    const doc=await withTimeout(ref.get(),10000,'Non riesco a controllare la stanza. Riprova tra poco.');
+    if(!doc.exists){
+      await loadActiveRooms();
+      return;
+    }
+    const data=doc.data();
+    const members=data.members||{};
+    const remainingMembers=Object.entries(members)
+      .filter(([uid])=>uid!==currentUser.uid)
+      .sort((a,b)=>((a[1]&&a[1].joinedAt)||0)-((b[1]&&b[1].joinedAt)||0));
+    const updateData={
+      [`members.${currentUser.uid}`]:firebase.firestore.FieldValue.delete(),
+      memberIds:firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+    };
+    if(data.owner===currentUser.uid){
+      if(remainingMembers.length){
+        const [newOwnerUid,newOwner]=remainingMembers[0];
+        updateData.owner=newOwnerUid;
+        updateData.ownerName=(newOwner&&newOwner.name)||'Giocatore';
+      }else{
+        updateData.owner=null;
+        updateData.ownerName='';
+      }
+    }
+    await withTimeout(ref.update(updateData),10000,'Non riesco ad abbandonare la stanza. Controlla Firestore Database e le regole.');
+    if(currentRoomId===code){
+      currentRoomId=null;
+      currentRoomName='';
+      currentRoomOwner='';
+      chatMessages=[];chatUnread=false;
+      sstore('roomId',null);
+    }
+    await loadActiveRooms();
+  }catch(e){
+    console.error('Errore abbandono stanza:',e);
+    if(el)el.innerHTML=`<div class="room-error">${roomErrorMessage(e)}</div>`;
+  }
+}
+
+function listenRoomMembers(code){
+  if(roomListener)roomListener();
+  roomListener=db.collection('stanze').doc(code).onSnapshot(doc=>{
+    if(!doc.exists)return;
+    const data=doc.data();
+    currentRoomOwner=data.owner||'';
+    updateRoomMemberNames(data,true);
+    const el=document.getElementById('room-members-list');
+    if(!el)return;
+    const members=data.members||{};
+    el.innerHTML='<div style="font-size:11px;color:#8b8b8b;letter-spacing:2px;margin-bottom:8px">MEMBRI CONNESSI</div>';
+    Object.entries(members).forEach(([uid,m])=>{
+      const isOwner=uid===data.owner;
+      el.innerHTML+=`<div class="room-member${isOwner?' owner':''}"><div class="dot"></div><span>${esc(m.name)}${isOwner?' 👑':''}</span></div>`;
+    });
+  },e=>{
+    console.error('Errore membri stanza:',e);
+    showCreateError(roomErrorMessage(e));
+  });
+}
+
+async function joinRoom(){
+  const code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(code.length<4)return showJoinError('Inserisci il codice stanza.');
+  if(!currentUser||!firebaseReady)return;
+  try{
+    const ref=db.collection('stanze').doc(code);
+    const doc=await ref.get();
+    if(!doc.exists)return showJoinError('Stanza non trovata. Controlla il codice.');
+    const data=doc.data();
+    // Aggiungi membro
+    const joinData={
+      [`members.${currentUser.uid}`]:{name:currentUser.displayName||currentUser.email,joinedAt:Date.now()},
+      memberIds:firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+    };
+    if(!data.owner){
+      joinData.owner=currentUser.uid;
+      joinData.ownerName=currentUser.displayName||currentUser.email;
+    }
+    await ref.update(joinData);
+    currentRoomOwner=data.owner||currentUser.uid;
+    // Carica dati della stanza
+    if(data.players)players=data.players;
+    if(data.history)history=data.history;
+    if(data.gameHistory)gameHistory=data.gameHistory;
+    actionLog=data.actionLog||[];
+    if(data.savedNames)savedNames=data.savedNames;
+    removedNames=mergeNames(data.removedNames||[]);
+    if(data.round)round=normalizeRound(data.round);
+    chatMessages=normalizeChatMessages(data.chatMessages);
+    currentRoomName=cleanRoomName(data.roomName);
+    saveAll();
+    currentRoomId=code;
+    sstore('roomId',code);
+    enterRoomDirect();
+  }catch(e){showJoinError(roomErrorMessage(e));}
+}
+
+function showJoinError(msg){
+  document.getElementById('join-error').innerHTML=`<div class="room-error">${msg}</div>`;
+}
+
+function shareRoomCode(){
+  const code=currentRoomId;
+  if(!code)return;
+  const txt=`♠ Punteggi briscola a 5 ♠\nUnisciti alla nostra stanza!\n\nCodice: ${code}\n\nApri l'app e inserisci il codice nella schermata "Unisciti a una Stanza".`;
+  if(navigator.share){navigator.share({title:'Punteggi briscola a 5',text:txt}).catch(()=>{});}
+  else{navigator.clipboard.writeText(txt).then(()=>alert('Codice copiato! 📋')).catch(()=>prompt('Codice stanza:',code));}
+}
+
+function enterRoom(){
+  if(!currentRoomId)return;
+  sstore('roomId',currentRoomId);
+  enterRoomDirect();
+}
+
+function updateRoomLabels(){
+  const userRoom=document.getElementById('user-room-label');
+  const headerRoom=document.getElementById('header-room-label');
+  if(userRoom)userRoom.textContent='🃏 '+(currentRoomName?currentRoomName+' · ':'Stanza: ')+currentRoomId;
+  if(headerRoom)headerRoom.textContent=currentRoomName?currentRoomName.toUpperCase():'STANZA '+currentRoomId;
+}
+
+function enterRoomDirect(){
+  lockOwnerEdits(false);
+  document.getElementById('room-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('user-email-label').textContent='👤 '+(currentUser.displayName||currentUser.email);
+  updateRoomLabels();
+  listenRoom(currentRoomId);
+  render();
+}
+
+function showRoomScreen(){
+  lockOwnerEdits(false);
+  if(roomListener){roomListener();roomListener=null;}
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('room-screen').style.display='flex';
+  document.getElementById('room-created').style.display='none';
+  document.getElementById('box-create').querySelector('.btn-create').style.display='block';
+  showCreateError('');
+  document.getElementById('join-code').value='';
+  document.getElementById('join-error').innerHTML='';
+  currentRoomId=null;currentRoomName='';currentRoomOwner='';roomMemberNames=[];roomMembers=[];chatMessages=[];chatUnread=false;sstore('roomId',null);
+  const roomNameInput=document.getElementById('room-name-input');
+  if(roomNameInput)roomNameInput.value='';
+  loadActiveRooms();
+}
+
+// ── FIRESTORE REALTIME ────────────────────────────────────────────────────
+function listenRoom(code){
+  if(roomListener)roomListener();
+  roomListener=db.collection('stanze').doc(code).onSnapshot(doc=>{
+    if(!doc.exists)return;
+    const data=doc.data();
+    const stillMember=(data.memberIds||[]).includes(currentUser.uid)||(data.members&&data.members[currentUser.uid]);
+    if(!stillMember){
+      showRoomScreen();
+      return;
+    }
+    const ownerChanged=currentRoomOwner!==(data.owner||'');
+    currentRoomOwner=data.owner||'';
+    if(ownerChanged){
+      lockOwnerEdits(false);
+      setTimeout(render,0);
+    }
+    updateRoomMemberNames(data,true);
+    updateChatMessages(data.chatMessages,true);
+    const loadedRoomName=cleanRoomName(data.roomName);
+    if(loadedRoomName!==currentRoomName){
+      currentRoomName=loadedRoomName;
+      updateRoomLabels();
+    }
+    // Aggiorna solo se i dati vengono da un altro utente
+    if(data._lastUpdatedBy!==currentUser.uid){
+      applyingRemote=true;
+      if(data.players)players=data.players;
+      if(data.history)history=data.history;
+      if(data.gameHistory)gameHistory=data.gameHistory;
+      actionLog=data.actionLog||[];
+      if(data.savedNames)savedNames=data.savedNames;
+      removedNames=mergeNames(data.removedNames||[]);
+      if(data.round)round=normalizeRound(data.round);
+      saveAll();
+      applyingRemote=false;
+      if(!data._lastUpdatedBy){render();return;}
+      showSync('🔄 Aggiornato da '+( data._lastUpdatedByName||'altro giocatore'));
+      render();
+    }
+  });
+}
+
+function showSync(msg,err=false){
+  const bar=document.getElementById('sync-bar');
+  bar.textContent=msg;bar.className='show'+(err?' error':'');
+  setTimeout(()=>bar.className='',3000);
+}
+
+async function syncToRoom(opts={}){
+  if(!currentUser||!firebaseReady||!currentRoomId)return;
+  try{
+    await db.collection('stanze').doc(currentRoomId).update({
+      players,history,gameHistory,savedNames,removedNames,round:normalizeRound(round),actionLog,
+      _lastUpdatedBy:currentUser.uid,
+      _lastUpdatedByName:currentUser.displayName||currentUser.email,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    if(opts.silent)return;
+    showSync('☁️ Sincronizzato');
+  }catch(e){showSync('⚠️ Errore sync',true);}
+}
+
+// ── SCOREBOARD ────────────────────────────────────────────────────────────
+function scheduleRoomSync(){
+  if(applyingRemote||!currentUser||!firebaseReady||!currentRoomId)return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>syncToRoom({silent:true}),350);
+}
+function syncLive(renderNow=true){
+  saveAll();
+  scheduleRoomSync();
+  if(renderNow)render();
+}
+function isRoomOwner(){
+  return !currentRoomId||!!(currentUser&&currentRoomOwner===currentUser.uid);
+}
+function requireRoomOwner(){
+  if(isRoomOwner())return true;
+  alert('Solo il proprietario della stanza puo eseguire questa operazione.');
+  return false;
+}
+function isOwnerEditsUnlocked(){
+  return isRoomOwner()&&Date.now()<ownerEditsUnlockedUntil;
+}
+function requireOwnerEditUnlock(){
+  if(!requireRoomOwner())return false;
+  if(isOwnerEditsUnlocked())return true;
+  openRoomSettings();
+  return false;
+}
+function actorName(){
+  return (currentUser&&(currentUser.displayName||currentUser.email))||'Offline';
+}
+function addActionLog(type,details){
+  actionLog=[{
+    id:'log_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    ts:Date.now(),
+    type,
+    details:details||'',
+    uid:currentUser?currentUser.uid:'offline',
+    name:actorName()
+  },...(actionLog||[])].slice(0,80);
+}
+function editLockRemaining(){
+  return Math.max(0,Math.ceil((ownerEditsUnlockedUntil-Date.now())/1000));
+}
+function editLockTimeLabel(){
+  const seconds=editLockRemaining();
+  const minutes=Math.floor(seconds/60);
+  return `${minutes}:${String(seconds%60).padStart(2,'0')}`;
+}
+function renderUnlockedAdminSettings(){
+  const members=roomMembers.map(m=>`<div class="settings-member"><span>${esc(m.name)}${m.uid===currentRoomOwner?' (proprietario)':''}</span>${m.uid!==currentRoomOwner?`<button type="button" title="Rimuovi partecipante" data-uid="${esc(m.uid)}" data-name="${esc(m.name)}" onclick="removeRoomParticipant(this.dataset.uid,this.dataset.name)">x</button>`:''}</div>`).join('');
+  return `<div class="section-label" style="margin-top:16px">NOME STANZA</div>
+    <div class="name-bank-row">
+      <input type="text" id="settings-room-name" maxlength="24" value="${esc(currentRoomName)}" placeholder="Nome stanza"/>
+      <button type="button" onclick="updateRoomNameFromSettings()">SALVA</button>
+    </div>
+    <div class="section-label" style="margin-top:16px">GESTIONE DATI</div>
+    <div class="room-settings-grid">
+      <button type="button" onclick="openAdminScreen('editnames')">NOMI</button>
+      <button type="button" onclick="openAdminScreen('history')">STORICO</button>
+      <button type="button" onclick="openAdminScreen('scoreboard')">PUNTEGGI</button>
+      <button type="button" style="background:#7f1d1d" onclick="clearRoomChat()">SVUOTA CHAT</button>
+    </div>
+    <div class="section-label" style="margin-top:16px">PARTECIPANTI</div>
+    ${members||'<div class="name-empty">Nessun partecipante.</div>'}
+    ${renderActionLog()}`;
+}
+function actionLogLabel(type){
+  const labels={hand_add:'Mano confermata',hand_undo:'Ultima mano annullata',hand_edit:'Mano modificata',hand_delete:'Mano eliminata',game_score_edit:'Punteggi corretti',game_finish:'Partita archiviata'};
+  return labels[type]||type;
+}
+function renderActionLog(){
+  const rows=(actionLog||[]).slice(0,12).map(l=>{
+    const d=l.ts?new Date(l.ts).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div class="settings-member"><span><strong>${esc(actionLogLabel(l.type))}</strong><br><small>${esc(d)} · ${esc(l.name||'')}</small>${l.details?`<br><small>${esc(l.details)}</small>`:''}</span></div>`;
+  }).join('');
+  return `<div class="section-label" style="margin-top:16px">LOG MODIFICHE</div>${rows||'<div class="name-empty">Nessuna modifica registrata.</div>'}`;
+}
+function renderThemeSettings(){
+  return `<div class="section-label">ASPETTO</div>
+    <div class="theme-choice" role="group" aria-label="Scelta tema">
+      <button type="button" class="${appTheme==='dark'?'active':''}" onclick="setAppTheme('dark')">Tema scuro</button>
+      <button type="button" class="${appTheme==='light'?'active':''}" onclick="setAppTheme('light')">Tema chiaro</button>
+    </div>`;
+}
+function renderRoomSettings(){
+  const el=document.getElementById('room-settings-content');
+  if(!el)return;
+  const themeHtml=renderThemeSettings();
+  if(!currentRoomId){
+    el.innerHTML=themeHtml+'<div class="room-settings-status locked">Entra in una stanza per aprire le impostazioni.</div>';
+    return;
+  }
+  if(!isRoomOwner()){
+    el.innerHTML=themeHtml+'<div class="room-settings-status locked">Solo il proprietario della stanza puo sbloccare le modifiche.</div>';
+    return;
+  }
+  if(isOwnerEditsUnlocked()){
+    el.innerHTML=`${themeHtml}<div class="room-settings-status unlocked">Modifiche sbloccate<br><strong id="edit-lock-countdown">${editLockTimeLabel()}</strong> rimanenti</div>
+      <button type="button" class="room-settings-action" style="background:#7f1d1d" onclick="lockOwnerEdits()">BLOCCA ORA</button>
+      ${renderUnlockedAdminSettings()}`;
+  }else{
+    el.innerHTML=`${themeHtml}<div class="room-settings-status locked">Modifiche bloccate</div>
+      <button type="button" class="room-settings-action" style="background:#154360" onclick="unlockOwnerEdits()">SBLOCCA PER 5 MINUTI</button>`;
+  }
+}
+function openRoomSettings(){
+  const modal=document.getElementById('room-settings-modal');
+  if(!modal)return;
+  renderRoomSettings();
+  modal.classList.add('show');
+  clearInterval(ownerSettingsTimer);
+  ownerSettingsTimer=setInterval(()=>{
+    if(!isOwnerEditsUnlocked()){
+      renderRoomSettings();
+      clearInterval(ownerSettingsTimer);
+      return;
+    }
+    const countdown=document.getElementById('edit-lock-countdown');
+    if(countdown)countdown.textContent=editLockTimeLabel();
+  },1000);
+}
+function closeRoomSettings(){
+  const modal=document.getElementById('room-settings-modal');
+  if(modal)modal.classList.remove('show');
+  clearInterval(ownerSettingsTimer);
+  ownerSettingsTimer=null;
+}
+function unlockOwnerEdits(){
+  if(!requireRoomOwner())return;
+  ownerEditsUnlockedUntil=Date.now()+5*60*1000;
+  clearTimeout(ownerEditLockTimer);
+  ownerEditLockTimer=setTimeout(()=>lockOwnerEdits(),5*60*1000+100);
+  renderRoomSettings();
+  render();
+}
+function lockOwnerEdits(renderNow=true){
+  ownerEditsUnlockedUntil=0;
+  clearTimeout(ownerEditLockTimer);
+  ownerEditLockTimer=null;
+  gameScoreEditIndex=null;
+  closeRankNameMenu();
+  closeHandEditor();
+  renderRoomSettings();
+  if(renderNow)render();
+}
+function openAdminScreen(target){
+  if(!requireOwnerEditUnlock())return;
+  closeRoomSettings();
+  showScreen(target);
+}
+async function updateRoomNameFromSettings(){
+  if(!requireOwnerEditUnlock())return;
+  const input=document.getElementById('settings-room-name');
+  const name=cleanRoomName(input&&input.value);
+  try{
+    await db.collection('stanze').doc(currentRoomId).update({
+      roomName:name,
+      _lastUpdatedBy:currentUser.uid,
+      _lastUpdatedByName:currentUser.displayName||currentUser.email,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentRoomName=name;
+    updateRoomLabels();
+    renderRoomSettings();
+  }catch(e){
+    alert('Non riesco a modificare il nome della stanza.');
+  }
+}
+async function clearRoomChat(){
+  if(!requireOwnerEditUnlock())return;
+  if(!confirm('Eliminare tutti i messaggi della chat?'))return;
+  try{
+    await db.collection('stanze').doc(currentRoomId).update({
+      chatMessages:[],
+      chatUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    chatMessages=[];
+    renderRoomSettings();
+    if(screen==='chat')render();
+  }catch(e){
+    alert('Non riesco a svuotare la chat.');
+  }
+}
+async function removeRoomParticipant(uid,name){
+  if(!requireOwnerEditUnlock()||!uid||uid===currentRoomOwner)return;
+  if(!confirm(`Rimuovere "${cleanPlayerName(name)}" dalla stanza?`))return;
+  try{
+    await db.collection('stanze').doc(currentRoomId).update({
+      [`members.${uid}`]:firebase.firestore.FieldValue.delete(),
+      memberIds:firebase.firestore.FieldValue.arrayRemove(uid)
+    });
+  }catch(e){
+    alert('Non riesco a rimuovere il partecipante.');
+  }
+}
+function normalizeRound(r){
+  r=r||{};
+  const toId=v=>{
+    const n=Number(v);
+    return v===null||v===undefined||v===''||Number.isNaN(n)?null:n;
+  };
+  const result=r.result==='win'||r.result==='lose'?r.result:null;
+  return {caller:toId(r.caller),points:String(r.points||'').slice(0,3),partner:toId(r.partner),result};
+}
+function defaultPlayers(){
+  return DEFAULT_NAMES.map((n,i)=>({id:i,name:n,score:0}));
+}
+function freshRoomState(){
+  return {players:defaultPlayers(),history:[],gameHistory:[],savedNames:[],removedNames:[],round:normalizeRound(null),chatMessages:[],actionLog:[]};
+}
+
+function monthlyScores(month,year){
+  const s={};players.forEach(p=>s[p.id]=0);
+  history.filter(h=>{const d=new Date(h.ts||0);return d.getMonth()===month&&d.getFullYear()===year;})
+  .forEach(h=>{
+    const base=h.basePoints,half=h.partnerPoints,opp=h.oppPts||Math.floor(base/2);
+    players.forEach(p=>{
+      const iC=p.id===h.callerId,iP=p.id===h.partnerId,iO=!iC&&!iP;
+      if(h.won){if(iC)s[p.id]+=base;else if(iP)s[p.id]+=half;else if(iO)s[p.id]-=opp;}
+      else{if(iC)s[p.id]-=base;else if(iP)s[p.id]-=half;else if(iO)s[p.id]+=opp;}
+    });
+  });
+  return s;
+}
+function inMonth(ts,m,y){const d=new Date(ts||0);return d.getMonth()===m&&d.getFullYear()===y;}
+function monthlyRounds(m,y){
+  return history.filter(h=>inMonth(h.ts,m,y)).length+
+    gameHistory.reduce((tot,g)=>{
+      if(g.rounds&&g.rounds.length)return tot+g.rounds.filter(h=>inMonth(h.ts,m,y)).length;
+      return tot+(inMonth(g.ts,m,y)?(g.hands||0):0);
+    },0);
+}
+function isRemovedName(name){
+  const clean=cleanPlayerName(name).toLowerCase();
+  return !!clean&&removedNames.some(n=>n.toLowerCase()===clean);
+}
+function activeRows(rows){return (rows||[]).filter(p=>!isRemovedName(p.name));}
+function emptyRoleStats(){
+  return {callerWins:0,callerLosses:0,partnerWins:0,partnerLosses:0};
+}
+function scoreRowDefaults(extra={}){
+  return {name:'Giocatore',score:0,wins:0,losses:0,games:0,...emptyRoleStats(),...extra};
+}
+function roleStatsText(p){
+  return `C ${p.callerWins||0}V-${p.callerLosses||0}P · Comp ${p.partnerWins||0}V-${p.partnerLosses||0}P`;
+}
+function gameRankingCompare(a,b){
+  return (b.wins||0)-(a.wins||0)||
+    (a.losses||0)-(b.losses||0)||
+    (b.score||0)-(a.score||0)||
+    cleanPlayerName(a.name).localeCompare(cleanPlayerName(b.name));
+}
+function scoreRankingCompare(a,b){
+  return (b.score||0)-(a.score||0)||
+    (b.wins||0)-(a.wins||0)||
+    (a.losses||0)-(b.losses||0)||
+    cleanPlayerName(a.name).localeCompare(cleanPlayerName(b.name));
+}
+function gameRows(g){
+  if(g&&Array.isArray(g.players)&&g.players.length)return activeRows(g.players).sort(gameRankingCompare);
+  if(g&&Array.isArray(g.rounds)&&g.rounds.length)return activeRows(scoreRowsFromRounds(g.rounds,players));
+  return [];
+}
+function rankedRowsFromGames(games){
+  const rows={};
+  games.forEach(g=>{
+    const ranked=[...gameRows(g)].sort(gameRankingCompare);
+    if(!ranked.length)return;
+    ranked.forEach(p=>{
+      const clean=cleanPlayerName(p.name)||'Giocatore';
+      const key=clean.toLowerCase();
+      if(!rows[key])rows[key]=scoreRowDefaults({name:clean});
+      rows[key].score+=p.score||0;
+      rows[key].games++;
+      rows[key].callerWins+=p.callerWins||0;
+      rows[key].callerLosses+=p.callerLosses||0;
+      rows[key].partnerWins+=p.partnerWins||0;
+      rows[key].partnerLosses+=p.partnerLosses||0;
+      if(p===ranked[0])rows[key].wins++;
+      else rows[key].losses++;
+    });
+  });
+  return Object.values(rows).sort((a,b)=>
+    b.wins-a.wins||
+    a.losses-b.losses||
+    b.score-a.score||
+    a.name.localeCompare(b.name)
+  );
+}
+function defaultGameRows(){return activeRows(players).map(p=>scoreRowDefaults({name:p.name}));}
+function monthlyGameCount(month,year){return gameHistory.filter(g=>inMonth(g.ts,month,year)).length;}
+function monthlyGameRows(month,year){
+  const rows=rankedRowsFromGames(gameHistory.filter(g=>inMonth(g.ts,month,year)));
+  return rows.length?rows:defaultGameRows();
+}
+function monthlyPlayedRows(month,year){
+  const rows={};
+  gameHistory.forEach(g=>{
+    if(g.scoreEdited&&g.players&&inMonth(g.ts,month,year)){
+      mergeScoreRows(rows,g.players);
+    }else if(g.rounds&&g.rounds.length){
+      const rounds=g.rounds.filter(h=>inMonth(h.ts,month,year));
+      if(rounds.length)mergeScoreRows(rows,scoreRowsFromRounds(rounds,players));
+    }else if(g.players&&inMonth(g.ts,month,year)){
+      mergeScoreRows(rows,g.players);
+    }
+  });
+  const currentRounds=history.filter(h=>inMonth(h.ts,month,year));
+  if(currentRounds.length)mergeScoreRows(rows,scoreRowsFromRounds(currentRounds,players));
+  if(!Object.keys(rows).length)return activeRows(players).map(p=>scoreRowDefaults({name:p.name}));
+  return Object.values(rows).sort(gameRankingCompare);
+}
+function sameDay(a,b){return a.getDate()===b.getDate()&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();}
+function inDay(ts,day){return sameDay(new Date(ts||0),day);}
+function dailyRounds(day){
+  return history.filter(h=>inDay(h.ts,day)).length+
+    gameHistory.reduce((tot,g)=>{
+      if(g.rounds&&g.rounds.length)return tot+g.rounds.filter(h=>inDay(h.ts,day)).length;
+      return tot+(inDay(g.ts,day)?(g.hands||0):0);
+    },0);
+}
+function dailyPlayedRows(day){
+  const rows={};
+  gameHistory.forEach(g=>{
+    if(g.scoreEdited&&g.players&&inDay(g.ts,day)){
+      mergeScoreRows(rows,g.players);
+    }else if(g.rounds&&g.rounds.length){
+      const rounds=g.rounds.filter(h=>inDay(h.ts,day));
+      if(rounds.length)mergeScoreRows(rows,scoreRowsFromRounds(rounds,players));
+    }else if(g.players&&inDay(g.ts,day)){
+      mergeScoreRows(rows,g.players);
+    }
+  });
+  const currentRounds=history.filter(h=>inDay(h.ts,day));
+  if(currentRounds.length)mergeScoreRows(rows,scoreRowsFromRounds(currentRounds,players));
+  if(!Object.keys(rows).length)return activeRows(players).map(p=>scoreRowDefaults({name:p.name}));
+  return Object.values(rows).sort(scoreRankingCompare);
+}
+function dayLabel(day){return day.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});}
+function isToday(day){return sameDay(day,new Date());}
+function namesForRound(h,fallbackPlayers=players){
+  const names={};
+  fallbackPlayers.forEach(p=>{names[p.id]=p.name;});
+  if(h.playerNames)Object.keys(h.playerNames).forEach(id=>{names[id]=h.playerNames[id];});
+  if(h.caller!==undefined)names[h.callerId]=h.caller;
+  if(h.partner!==undefined)names[h.partnerId]=h.partner;
+  return names;
+}
+function scoreRowsFromRounds(rounds,fallbackPlayers=players){
+  if(!rounds.length)return activeRows(fallbackPlayers).map(p=>scoreRowDefaults({name:p.name,score:p.score||0}));
+  const rows={};
+  function row(name){
+    const clean=cleanPlayerName(name)||'Giocatore';
+    if(isRemovedName(clean))return null;
+    const key=clean.toLowerCase();
+    if(!rows[key])rows[key]=scoreRowDefaults({name:clean});
+    return rows[key];
+  }
+  rounds.forEach(h=>{
+    const names=namesForRound(h,fallbackPlayers);
+    let ids=mergeNames(Object.keys(names),fallbackPlayers.map(p=>String(p.id))).map(Number).filter(id=>!Number.isNaN(id));
+    if(!ids.length)ids=fallbackPlayers.map(p=>p.id);
+    const base=h.basePoints,half=h.partnerPoints,opp=h.oppPts||Math.floor(base/2);
+    ids.forEach(id=>{
+      const r=row(names[id]||`Giocatore ${id+1}`);
+      if(!r)return;
+      const iC=id===h.callerId,iP=id===h.partnerId,iO=!iC&&!iP;
+      if(h.won){
+        if(iC){r.score+=base;r.wins++;r.callerWins++;}
+        else if(iP){r.score+=half;r.wins++;r.partnerWins++;}
+        else if(iO){r.score-=opp;r.losses++;}
+      }else{
+        if(iC){r.score-=base;r.losses++;r.callerLosses++;}
+        else if(iP){r.score-=half;r.losses++;r.partnerLosses++;}
+        else if(iO){r.score+=opp;r.wins++;}
+      }
+    });
+  });
+  return Object.values(rows).sort(gameRankingCompare);
+}
+function mergeScoreRows(target,source){
+  source.forEach(p=>{
+    const clean=cleanPlayerName(p.name)||'Giocatore';
+    if(isRemovedName(clean))return;
+    const key=clean.toLowerCase();
+    if(!target[key])target[key]=scoreRowDefaults({name:clean});
+    target[key].score+=p.score||0;
+    target[key].wins+=p.wins||0;
+    target[key].losses+=p.losses||0;
+    target[key].callerWins+=p.callerWins||0;
+    target[key].callerLosses+=p.callerLosses||0;
+    target[key].partnerWins+=p.partnerWins||0;
+    target[key].partnerLosses+=p.partnerLosses||0;
+  });
+}
+function currentGameRows(){return scoreRowsFromRounds(history,players);}
+function totalRoundsCount(){
+  return history.length+gameHistory.reduce((tot,g)=>tot+((g.rounds&&g.rounds.length)||g.hands||0),0);
+}
+function totalGameCount(){return gameHistory.length;}
+function totalGameRows(){
+  const rows=rankedRowsFromGames(gameHistory);
+  return rows.length?rows:defaultGameRows();
+}
+function allPlayedRows(){
+  const rows={};
+  gameHistory.forEach(g=>{
+    if(g.rounds&&g.rounds.length)mergeScoreRows(rows,scoreRowsFromRounds(g.rounds,players));
+    else if(g.players)mergeScoreRows(rows,g.players);
+  });
+  if(history.length)mergeScoreRows(rows,currentGameRows());
+  else if(!Object.keys(rows).length)mergeScoreRows(rows,activeRows(players).map(p=>scoreRowDefaults({name:p.name,score:p.score})));
+  return Object.values(rows).sort(gameRankingCompare);
+}
+
+function showScreen(s){
+  screen=s;
+  if(s==='chat')chatUnread=false;
+  document.querySelectorAll('#nav button').forEach((b,i)=>b.classList.toggle('active',['scoreboard','newround','history','editnames','chat'][i]===s));
+  updateChatNavUnread();
+  render();
+}
+function updateChatNavUnread(){
+  const btn=document.querySelectorAll('#nav button')[4];
+  if(btn)btn.classList.toggle('chat-unread',chatUnread&&screen!=='chat');
+}
+function rankPlayerName(name,gold){
+  const safe=esc(name);
+  const cls=`player-name${gold?' gold':''}`;
+  if(!isOwnerEditsUnlocked()||DEFAULT_NAMES.includes(cleanPlayerName(name)))return `<div class="${cls}">${safe}</div>`;
+  return `<button class="${cls} rank-name-button" type="button" title="Gestisci ${safe}" data-name="${safe}" onclick="openRankNameMenu(this.dataset.name)">${safe}</button>`;
+}
+function render(){
+  const el=document.getElementById('content');if(!el)return;
+  if(screen==='scoreboard')el.innerHTML=renderScoreboard();
+  else if(screen==='newround')el.innerHTML=renderNewRound();
+  else if(screen==='history')el.innerHTML=renderHistory();
+  else if(screen==='editnames')el.innerHTML=renderEditNames();
+  else if(screen==='chat')el.innerHTML=renderChat();
+  if(screen==='chat')setTimeout(scrollChatBottom,0);
+}
+
+function renderScoreboard(){
+  const rankColors=['#1a6fa8','#8b6914','#333','#2a2a2a','#2a2a2a'];
+  let html=`<div class="sub-tabs">
+    <button class="sub-tab${classTab==='giornaliera'?' active':''}" onclick="setClassTab('giornaliera')">Giornaliera</button>
+    <button class="sub-tab${classTab==='mensile'?' active':''}" onclick="setClassTab('mensile')">Mensile</button>
+    <button class="sub-tab${classTab==='totale'?' active':''}" onclick="setClassTab('totale')">Totale</button>
+  </div>`;
+
+  if(classTab==='totale'){
+    const sorted=totalGameRows();
+    const totalGames=totalGameCount();
+    const totalRounds=totalGames;
+    html+=`<div style="margin-bottom:14px;font-size:12px;color:#8b8b8b;letter-spacing:2px;text-align:center">PARTITE TOTALI: ${totalGames}</div>`;
+    sorted.forEach((p,i)=>{
+      const sc=(p.wins||0)+'V',cls=i===0&&(p.wins||0)>0?'score-gold':(p.wins||0)>0?'score-pos':'';
+      html+=`<div class="score-card ${i===0?'first':'other'}"><div class="rank-badge" style="background:${rankColors[i]||'#2a2a2a'}">${i+1}</div><div style="flex:1;min-width:0">${rankPlayerName(p.name,i===0)}${totalRounds>0?`<div class="player-stats">${p.games||0} partite - ${p.wins}V - ${p.losses}P</div><div class="player-stats">${roleStatsText(p)}</div>`:''}</div><div class="player-score ${cls}">${sc>0?'+'+sc:sc}</div></div>`;
+    });
+  } else if(classTab==='mensile') {
+    const now=new Date();
+    html+=`<div class="month-selector"><button onclick="prevMonth()">‹</button><span>${MESI[viewMonth]} ${viewYear}</span><button onclick="nextMonth()" ${viewMonth===now.getMonth()&&viewYear===now.getFullYear()?'style="opacity:.3;pointer-events:none"':''}>›</button></div>`;
+    const mG=monthlyGameCount(viewMonth,viewYear),sorted=monthlyGameRows(viewMonth,viewYear);
+    html+=`<div style="margin-bottom:14px;font-size:12px;color:#8b8b8b;letter-spacing:2px;text-align:center">PARTITE DEL MESE: ${mG}</div>`;
+    if(mG===0){html+=`<div class="empty">Nessuna partita in ${MESI[viewMonth]}.</div>`;}
+    else{sorted.forEach((p,i)=>{
+      const sc=(p.wins||0)+'V',cls=i===0&&(p.wins||0)>0?'score-gold':(p.wins||0)>0?'score-pos':'';
+      html+=`<div class="score-card ${i===0?'first':'other'}"><div class="rank-badge" style="background:${rankColors[i]||'#2a2a2a'}">${i+1}</div><div style="flex:1;min-width:0">${rankPlayerName(p.name,i===0)}<div class="player-stats">${p.games||0} partite - ${p.wins}V - ${p.losses}P</div><div class="player-stats">${roleStatsText(p)}</div></div><div class="player-score ${cls}">${sc>0?'+'+sc:sc}</div></div>`;
+    });}
+  } else {
+    const dR=dailyRounds(viewDay),sorted=dailyPlayedRows(viewDay);
+    html+=`<div class="month-selector"><button onclick="prevDay()">‹</button><span>${dayLabel(viewDay)}</span><button onclick="nextDay()" ${isToday(viewDay)?'style="opacity:.3;pointer-events:none"':''}>›</button></div>`;
+    html+=`<div style="margin-bottom:14px;font-size:12px;color:#8b8b8b;letter-spacing:2px;text-align:center">MANCHE DEL GIORNO: ${dR}</div>`;
+    if(dR===0){sorted.forEach((p,i)=>{
+      html+=`<div class="score-card ${i===0?'first':'other'}"><div class="rank-badge" style="background:${rankColors[i]||'#2a2a2a'}">${i+1}</div><div style="flex:1;min-width:0">${rankPlayerName(p.name,i===0)}<div class="player-stats">0V – 0P</div><div class="player-stats">${roleStatsText(p)}</div></div><div class="player-score">0</div></div>`;
+    });}
+    else{sorted.forEach((p,i)=>{
+      const sc=p.score,cls=i===0?'score-gold':sc>0?'score-pos':sc<0?'score-neg':'';
+      html+=`<div class="score-card ${i===0?'first':'other'}"><div class="rank-badge" style="background:${rankColors[i]||'#2a2a2a'}">${i+1}</div><div style="flex:1;min-width:0">${rankPlayerName(p.name,i===0)}<div class="player-stats">${p.wins}V – ${p.losses}P</div><div class="player-stats">${roleStatsText(p)}</div></div><div class="player-score ${cls}">${sc>0?'+'+sc:sc}</div></div>`;
+    });}
+  }
+
+  html+=`
+  <button class="btn-share" onclick="shareClassifica()">📤 Condividi Classifica</button>
+  ${currentRoomId?`<button class="btn-share" style="background:linear-gradient(90deg,#4a2a1a,#e67e22);margin-top:8px" onclick="shareRoomCode()">🔗 Condividi Codice Stanza</button>`:''}
+  ${currentRoomId?`<button class="btn-share" style="background:linear-gradient(90deg,#7f1d1d,#c0392b);margin-top:8px" onclick="finishGame()">Fine Partita</button>`:''}
+  ${currentRoomId?`<button class="btn-share" style="background:linear-gradient(90deg,#154360,#1a6fa8);margin-top:8px" onclick="startNewGame()">Nuova Partita</button>`:''}
+  <button class="btn-reset" onclick="resetGame()">↺ Reset Punteggi</button>`;
+  return html;
+}
+
+function setClassTab(t){classTab=t;render();}
+function showAppInfo(){
+  alert('Funzionamento app\n\n1. Crea o entra in una stanza.\n2. In Nomi carica i giocatori e scegli i 5 della partita.\n3. In + Mano inserisci punti chiamati, chiamante, compagno e risultato.\n4. Conferma mano per aggiornare le classifiche in tempo reale.\n5. La classifica giornaliera somma i punti di tutte le mani della giornata.\n6. Mensile e Totale calcolano le partite vinte.\n7. Usa Fine Partita per salvare la partita nello storico.\n8. In Chat puoi scrivere agli altri partecipanti della stanza.');
+}
+function prevMonth(){viewMonth--;if(viewMonth<0){viewMonth=11;viewYear--;}render();}
+function nextMonth(){const n=new Date();if(viewMonth===n.getMonth()&&viewYear===n.getFullYear())return;viewMonth++;if(viewMonth>11){viewMonth=0;viewYear++;}render();}
+function prevDay(){viewDay=new Date(viewDay);viewDay.setDate(viewDay.getDate()-1);render();}
+function nextDay(){if(isToday(viewDay))return;viewDay=new Date(viewDay);viewDay.setDate(viewDay.getDate()+1);if(viewDay>new Date())viewDay=new Date();render();}
+
+function renderNewRound(){
+  const pts=parseInt(round.points),valid=pts>=61&&pts<=120;
+  const cat=pts>=80?'CAPPOTTO':pts>=61?'NORMALE':null;
+  const base=pts>=80?4:pts>=61?2:0,half=Math.floor(base/2),oppPts=pts>=80?2:1;
+  const callerButtons=players.map(p=>`<button type="button" class="player-btn${round.caller===p.id?' active-blue':''}" onclick="setRoundCaller(${p.id})" title="${esc(p.name)}">${esc(p.name)}</button>`).join('');
+  const partnerButtons=players.map(p=>`<button type="button" class="player-btn${round.partner===p.id?' active-cyan':''}" onclick="setRoundPartner(${p.id})" title="${esc(p.name)}">${esc(p.name)}</button>`).join('');
+  const catBadge=cat?`<span class="badge" style="margin-left:8px;background:${cat==='CAPPOTTO'?'#154360':'#8b6914'}">${cat} (±${base}pts)</span>`:'';
+  let preview='';
+  if(round.result&&valid&&round.caller!==null&&round.partner!==null){
+    const cN=esc(players[round.caller].name),pN=esc(players[round.partner].name);
+    preview=round.result==='win'
+      ?`<div class="preview win"><div style="color:#4ade80;margin-bottom:6px;font-weight:700">🏆 Vittoria del chiamante</div><div style="color:#a0a0a0;margin-bottom:2px"><span style="color:#f5c842">${cN}</span>: <span style="color:#4ade80">+${base} pt</span> &nbsp;·&nbsp; <span style="color:#1abc9c">${pN}</span>: <span style="color:#4ade80">+${half} pt</span></div><div style="color:#f87171">Avversari (×3): −${oppPts} pt ciascuno</div></div>`
+      :`<div class="preview lose"><div style="color:#f87171;margin-bottom:6px;font-weight:700">💀 Sconfitta del chiamante</div><div style="color:#f87171;margin-bottom:2px"><span style="color:#f5c842">${cN}</span>: −${base} pt &nbsp;·&nbsp; <span style="color:#1abc9c">${pN}</span>: −${half} pt</div><div style="color:#4ade80">Avversari (×3): +${oppPts} pt ciascuno</div></div>`;
+  }
+  return `<div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:18px;text-align:center">NUOVA MANO</div>
+  <div class="points-block">
+    <div class="section-label">PUNTI CHIAMATI${catBadge}</div>
+    <input id="pts-input" type="number" min="61" max="120" value="${round.points}" placeholder="61 – 120" class="${valid?'valid':''}" oninput="setRoundPoints(this.value)"/>
+    <div class="num-pad">
+      ${[1,2,3,4,5,6,7,8,9,0].map(n=>`<button type="button" onclick="tapPointDigit('${n}')">${n}</button>`).join('')}
+      <button type="button" class="wide" onclick="backspacePoints()">CANCELLA</button>
+      <button type="button" class="wide" onclick="clearPoints()">AZZERA</button>
+    </div>
+  </div>
+  <div class="round-roles">
+    <div class="round-role-card">
+      <div class="section-label">CHIAMANTE</div>
+      <div class="player-grid">${callerButtons}</div>
+    </div>
+    <div class="round-role-card">
+      <div class="section-label">COMPAGNO</div>
+      <div class="player-grid">${partnerButtons}</div>
+    </div>
+  </div>
+  <div class="section-label">RISULTATO</div>
+  <div class="result-btns">
+    <button class="result-btn${round.result==='win'?' win':''}" onclick="setRoundResult('win')">✓ VINTO</button>
+    <button class="result-btn${round.result==='lose'?' lose':''}" onclick="setRoundResult('lose')">✗ PERSO</button>
+  </div>${preview}
+  <div id="round-error" style="display:none" class="error-box"></div>
+  <button class="btn-primary" onclick="confirmRound()">CONFERMA MANO</button>
+  ${history.length?`<button class="btn-reset" onclick="undoLastHand()">Annulla ultima mano</button>`:''}`;
+}
+
+function renderHistory(){
+  let html=`<div class="sub-tabs">
+    <button class="sub-tab${historyTab==='mani'?' active':''}" onclick="setHistoryTab('mani')">Mani</button>
+    <button class="sub-tab${historyTab==='partite'?' active':''}" onclick="setHistoryTab('partite')">Partite</button>
+  </div>`;
+  if(historyTab==='partite')return html+renderGameHistory();
+  if(!history.length)return html+`<div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:20px;text-align:center">STORICO MANI</div><div class="empty">Nessuna mano giocata.</div>`;
+  html+=`<div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:20px;text-align:center">STORICO MANI</div>`;
+  history.forEach((h,i)=>{html+=renderHistoryHandCard(h,'current',i);});
+  return html+`<button class="btn-reset" style="border-color:#f8717144;color:#f87171" onclick="deleteAllHistory()">🗑 Elimina tutto lo storico</button>`;
+}
+
+function renderGameHistory(){
+  if(selectedGameIndex!==null&&gameHistory[selectedGameIndex])return renderGameHistoryDetails(selectedGameIndex);
+  if(!gameHistory.length)return `<div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:20px;text-align:center">STORICO PARTITE</div><div class="empty">Nessuna partita salvata.</div>`;
+  let html=`<div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:20px;text-align:center">STORICO PARTITE</div>`;
+  gameHistory.forEach((g,i)=>{
+    const dS=g.ts?new Date(g.ts).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const rows=gameRows(g).slice(0,5);
+    html+=`<div class="history-card won" role="button" tabindex="0" onclick="openGameHistory(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openGameHistory(${i})}" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;color:#8b8b8b;letter-spacing:2px">PARTITA ${gameHistory.length-i}${dS?' · '+dS:''}</span>
+        <span class="badge" style="background:#154360">${(g.rounds&&g.rounds.length)||g.hands||0} mani</span>
+      </div>
+      ${rows.map((p,idx)=>`<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:5px"><span style="color:${idx===0?'#f5c842':'#e6d9b8'}">${idx+1}. ${esc(p.name)}</span><span class="${p.score>0?'score-pos':p.score<0?'score-neg':''}" style="font-weight:700">${p.score>0?'+'+p.score:p.score}</span></div>`).join('')}
+      <div style="font-size:11px;color:#5dade2;letter-spacing:1px;margin-top:10px">Tocca per vedere le mani</div>
+    </div>`;
+  });
+  return html+`<button class="btn-reset" style="border-color:#f8717144;color:#f87171" onclick="deleteGameHistory()">Elimina storico partite</button>`;
+}
+function renderGameHistoryDetails(i){
+  const g=gameHistory[i];
+  const dS=g.ts?new Date(g.ts).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  const rounds=g.rounds||[];
+  const rows=gameRows(g);
+  let html=`<button class="btn-reset" style="margin-top:0;margin-bottom:14px" onclick="backToGameHistory()">← Torna alle partite</button>
+    <div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:20px;text-align:center">PARTITA ${gameHistory.length-i}${dS?' · '+dS:''}</div>
+    ${renderGameRanking(rows,(rounds.length||g.hands||0))}
+    ${g.scoreEdited?`<div class="name-empty" style="color:#5dade2;margin-top:-4px">Punteggi corretti dal proprietario.</div>`:''}
+    ${isOwnerEditsUnlocked()?renderGameScoreEditor(i,rows):''}
+    <div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin:24px 0 20px;text-align:center">MANI DELLA PARTITA</div>`;
+  if(!rounds.length)return html+`<div class="empty">Le mani dettagliate saranno disponibili per le nuove partite salvate da ora in poi.</div>`;
+  rounds.forEach((h,handIndex)=>{html+=renderHistoryHandCard(h,'game',handIndex);});
+  return html;
+}
+function renderGameRanking(rows,hands){
+  const rankColors=['#1a6fa8','#8b6914','#333','#2a2a2a','#2a2a2a'];
+  let html=`<div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:14px;text-align:center">CLASSIFICA PARTITA · ${hands} MANI</div>`;
+  if(!rows.length)return html+`<div class="empty">Nessuna classifica salvata per questa partita.</div>`;
+  rows.slice(0,5).forEach((p,i)=>{
+    const sc=p.score||0,cls=i===0?'score-gold':sc>0?'score-pos':sc<0?'score-neg':'';
+    html+=`<div class="score-card ${i===0?'first':'other'}"><div class="rank-badge" style="background:${rankColors[i]||'#2a2a2a'}">${i+1}</div><div style="flex:1;min-width:0"><div class="player-name${i===0?' gold':''}">${esc(p.name)}</div>${hands>0?`<div class="player-stats">${p.wins||0}V – ${p.losses||0}P</div><div class="player-stats">${roleStatsText(p)}</div>`:''}</div><div class="player-score ${cls}">${sc>0?'+'+sc:sc}</div></div>`;
+  });
+  return html;
+}
+function renderGameScoreEditor(gameIndex,rows){
+  if(gameScoreEditIndex!==gameIndex){
+    return `<button class="btn-share" style="margin-top:8px;background:linear-gradient(90deg,#154360,#1a6fa8)" onclick="startGameScoreEdit(${gameIndex})">Correggi punteggi</button>`;
+  }
+  return `<div class="game-score-editor">
+    <div class="section-label">CORREGGI PUNTEGGI PARTITA</div>
+    ${rows.map((p,i)=>`<div class="game-score-edit-row"><label for="game-score-${i}">${esc(p.name)}</label><input id="game-score-${i}" type="number" inputmode="numeric" min="-999" max="999" value="${Number(p.score)||0}"></div>`).join('')}
+    <div class="game-score-edit-actions">
+      <button type="button" style="background:#154360" onclick="saveGameScoreEdit(${gameIndex})">SALVA</button>
+      <button type="button" style="background:#333" onclick="cancelGameScoreEdit()">ANNULLA</button>
+    </div>
+  </div>`;
+}
+function renderHistoryHandCard(h,scope='',index=-1){
+  const cC=h.category==='CAPPOTTO'?'#154360':'#8b6914';
+  const dS=h.ts?new Date(h.ts).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  const admin=isOwnerEditsUnlocked()&&scope?`<div class="hand-admin-actions"><button type="button" style="background:#154360" onclick="openHandEditor('${scope}',${index})">MODIFICA</button><button type="button" style="background:#7f1d1d" onclick="deleteHand('${scope}',${index})">ELIMINA</button></div>`:'';
+  return `<div class="history-card ${h.won?'won':'lost'}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:#8b8b8b;letter-spacing:2px">MANO ${h.round}${dS?' · '+dS:''}</span><div style="display:flex;gap:6px"><span class="badge" style="background:${cC}">${h.category}</span><span class="result-badge ${h.won?'w':'l'}">${h.won?'✓ VINTO':'✗ PERSO'}</span></div></div><div style="font-size:14px;margin-bottom:4px"><span style="color:#f5c842;font-weight:700">${esc(h.caller)}</span><span style="color:#8b8b8b"> ha chiamato </span><span style="font-weight:700">${h.points} punti</span></div><div style="font-size:13px;color:#a0a0a0;margin-bottom:8px">Compagno: <span style="color:#1abc9c">${esc(h.partner)}</span></div>${h.won?`<div style="font-size:12px"><span style="color:#4ade80">🏆 </span><span style="color:#f5c842">${esc(h.caller)}</span>: <span style="color:#4ade80">+${h.basePoints}</span> · <span style="color:#1abc9c">${esc(h.partner)}</span>: <span style="color:#4ade80">+${h.partnerPoints}</span><br><span style="color:#f87171">💀 Avversari: −${h.basePoints}</span></div>`:`<div style="font-size:12px"><span style="color:#f87171">💀 </span><span style="color:#f5c842">${esc(h.caller)}</span>: <span style="color:#f87171">−${h.basePoints}</span> · <span style="color:#1abc9c">${esc(h.partner)}</span>: <span style="color:#f87171">−${h.partnerPoints}</span><br><span style="color:#4ade80">🏆 Avversari: +${h.basePoints}</span></div>`}${admin}</div>`;
+}
+function handFromTarget(target=handEditTarget){
+  if(!target)return null;
+  if(target.scope==='current')return history[target.index]||null;
+  const game=gameHistory[target.gameIndex];
+  return game&&game.rounds?game.rounds[target.index]||null:null;
+}
+function openHandEditor(scope,index){
+  if(!requireOwnerEditUnlock())return;
+  handEditTarget={scope,index:Number(index),gameIndex:scope==='game'?selectedGameIndex:null};
+  const hand=handFromTarget();
+  const modal=document.getElementById('hand-edit-modal');
+  const content=document.getElementById('hand-edit-content');
+  if(!hand||!modal||!content)return;
+  const names=namesForRound(hand,players);
+  const entries=Object.entries(names)
+    .map(([id,name])=>({id:Number(id),name:cleanPlayerName(name)}))
+    .filter(p=>!Number.isNaN(p.id)&&p.name)
+    .sort((a,b)=>a.id-b.id);
+  const options=selected=>entries.map(p=>`<option value="${p.id}"${p.id===selected?' selected':''}>${esc(p.name)}</option>`).join('');
+  content.innerHTML=`<div class="hand-edit-grid">
+    <label>PUNTI CHIAMATI<input type="number" id="hand-edit-points" min="61" max="120" value="${Number(hand.points)||61}"></label>
+    <label>CHIAMANTE<select id="hand-edit-caller">${options(Number(hand.callerId))}</select></label>
+    <label>COMPAGNO<select id="hand-edit-partner">${options(Number(hand.partnerId))}</select></label>
+    <label>RISULTATO<select id="hand-edit-result"><option value="win"${hand.won?' selected':''}>Vinto</option><option value="lose"${!hand.won?' selected':''}>Perso</option></select></label>
+    <button type="button" class="room-settings-action" style="background:#154360" onclick="saveHandEdit()">SALVA MODIFICHE</button>
+  </div>`;
+  modal.classList.add('show');
+}
+function closeHandEditor(){
+  const modal=document.getElementById('hand-edit-modal');
+  if(modal)modal.classList.remove('show');
+  handEditTarget=null;
+}
+function normalizeHandNumbers(list){
+  return list.map((h,i)=>({...h,round:list.length-i}));
+}
+function rebuildCurrentScores(){
+  const totals={};
+  players.forEach(p=>{totals[p.id]=0;});
+  history.forEach(h=>{
+    const base=Number(h.basePoints)||0;
+    const half=Number(h.partnerPoints)||0;
+    const opp=Number(h.oppPts)||Math.floor(base/2);
+    players.forEach(p=>{
+      const caller=p.id===Number(h.callerId),partner=p.id===Number(h.partnerId);
+      if(h.won)totals[p.id]+=caller?base:partner?half:-opp;
+      else totals[p.id]+=caller?-base:partner?-half:opp;
+    });
+  });
+  players=players.map(p=>({...p,score:totals[p.id]||0}));
+}
+function rebuildArchivedGame(gameIndex){
+  const game=gameHistory[gameIndex];
+  if(!game)return;
+  const rounds=normalizeHandNumbers(game.rounds||[]);
+  gameHistory[gameIndex]={
+    ...game,
+    rounds,
+    hands:rounds.length,
+    players:scoreRowsFromRounds(rounds,players),
+    scoreEdited:false
+  };
+}
+function saveHandEdit(){
+  if(!requireOwnerEditUnlock())return;
+  const target=handEditTarget;
+  const oldHand=handFromTarget(target);
+  if(!target||!oldHand)return;
+  const points=Number(document.getElementById('hand-edit-points')?.value);
+  const callerId=Number(document.getElementById('hand-edit-caller')?.value);
+  const partnerId=Number(document.getElementById('hand-edit-partner')?.value);
+  const result=document.getElementById('hand-edit-result')?.value;
+  if(!Number.isInteger(points)||points<61||points>120)return alert('I punti devono essere compresi tra 61 e 120.');
+  if(callerId===partnerId)return alert('Chiamante e compagno devono essere diversi.');
+  const names=namesForRound(oldHand,players);
+  const base=points>=80?4:2;
+  const updated={
+    ...oldHand,
+    callerId,
+    caller:names[callerId]||`Giocatore ${callerId+1}`,
+    partnerId,
+    partner:names[partnerId]||`Giocatore ${partnerId+1}`,
+    points,
+    basePoints:base,
+    partnerPoints:Math.floor(base/2),
+    oppPts:points>=80?2:1,
+    category:points>=80?'CAPPOTTO':'NORMALE',
+    won:result==='win',
+    playerNames:{...names}
+  };
+  if(target.scope==='current'){
+    history[target.index]=updated;
+    history=normalizeHandNumbers(history);
+    rebuildCurrentScores();
+  }else{
+    gameHistory[target.gameIndex].rounds[target.index]=updated;
+    rebuildArchivedGame(target.gameIndex);
+  }
+  addActionLog('hand_edit',`${updated.caller} con ${updated.partner}, ${updated.points} punti`);
+  closeHandEditor();
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  render();
+}
+function deleteHand(scope,index){
+  if(!requireOwnerEditUnlock())return;
+  if(!confirm('Eliminare questa mano?'))return;
+  const handIndex=Number(index);
+  if(scope==='current'){
+    const removed=history[handIndex];
+    history.splice(handIndex,1);
+    history=normalizeHandNumbers(history);
+    rebuildCurrentScores();
+    if(removed)addActionLog('hand_delete',`${removed.caller} con ${removed.partner}, ${removed.points} punti`);
+  }else{
+    const game=gameHistory[selectedGameIndex];
+    if(!game||!game.rounds)return;
+    const removed=game.rounds[handIndex];
+    game.rounds.splice(handIndex,1);
+    rebuildArchivedGame(selectedGameIndex);
+    if(removed)addActionLog('hand_delete',`${removed.caller} con ${removed.partner}, ${removed.points} punti`);
+  }
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  render();
+}
+function openGameHistory(i){selectedGameIndex=i;gameScoreEditIndex=null;render();}
+function backToGameHistory(){selectedGameIndex=null;gameScoreEditIndex=null;render();}
+
+function setHistoryTab(t){historyTab=t;if(t!=='partite')selectedGameIndex=null;render();}
+
+function renderEditNames(){
+  const pool=namePool();
+  let html=`<div style="font-size:13px;color:#8b8b8b;letter-spacing:2px;margin-bottom:20px;text-align:center">NOMI GIOCATORI</div>
+  <div class="section-label">SCEGLI I 5 GIOCATORI</div>`;
+  players.forEach((p,i)=>{
+    const options=`<option value="">Giocatore ${i+1}</option>`+pool.map(n=>`<option value="${esc(n)}"${p.name===n?' selected':''}>${esc(n)}</option>`).join('');
+    html+=`<div class="name-slot"><div class="section-label">GIOCATORE ${i+1}</div><select class="player-select" id="name-${i}">${options}</select></div>`;
+  });
+  if(currentRoomId){
+    html+=`<div class="name-bank">
+      <div class="section-label">PARTECIPANTI STANZA</div>
+      ${roomMemberNames.length?`<div class="saved-name-list">${roomMemberNames.map((n,i)=>`<button type="button" class="participant-name-pill" onclick="addRoomParticipantName(${i})">${esc(n)}</button>`).join('')}</div>
+      <button type="button" class="btn-add-members" onclick="addRoomParticipantsToNames()">AGGIUNGI TUTTI AI NOMI</button>`:`<div class="name-empty">Nessun partecipante trovato.</div>`}
+    </div>`;
+  }
+  html+=`<div class="name-bank">
+    <div class="section-label">CARICA NOMI</div>
+    <div class="name-bank-row">
+      <input type="text" id="saved-name-input" maxlength="20" placeholder="Nuovo nome" onkeydown="if(event.key==='Enter')addSavedName()"/>
+      <button type="button" onclick="addSavedName()">AGGIUNGI</button>
+    </div>
+    ${savedNames.length&&isOwnerEditsUnlocked()?`<div class="saved-name-edit">
+      <div class="section-label">MODIFICA NOME SALVATO</div>
+      <select class="player-select" id="edit-saved-name-index" onchange="prefillSavedNameEdit(this.value)">
+        <option value="">Scegli nome</option>
+        ${savedNames.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join('')}
+      </select>
+      <div class="name-bank-row">
+        <input type="text" id="edit-saved-name-input" maxlength="20" placeholder="Nuovo nome" onkeydown="if(event.key==='Enter')editSavedName()"/>
+        <button type="button" onclick="editSavedName()">MODIFICA</button>
+      </div>
+    </div>`:''}
+    ${savedNames.length?`<div class="saved-name-list">${savedNames.map((n,i)=>`<span class="saved-name-pill">${esc(n)}${isOwnerEditsUnlocked()?`<button type="button" onclick="removeSavedName(${i})">x</button>`:''}</span>`).join('')}</div>`:`<div class="name-empty">Nessun nome salvato.</div>`}
+  </div>`;
+  return html+`<div class="name-actions">
+    <button class="btn-primary" onclick="saveNames()">SALVA NOMI</button>
+    <button class="btn-primary btn-load-names" onclick="loadNamesForRound()">CARICA NOMI NELLA MANO</button>
+  </div>`;
+}
+
+function renderChat(){
+  if(!currentRoomId){
+    return `<div class="empty">Entra in una stanza per usare la chat.</div>`;
+  }
+  const rows=normalizeChatMessages(chatMessages).slice(-80);
+  return `<div class="chat-box">
+    <div class="section-label">CHAT STANZA</div>
+    <div id="chat-list" class="chat-list">
+      ${rows.length?rows.map(m=>{
+        const mine=currentUser&&m.uid===currentUser.uid;
+        return `<div class="chat-message${mine?' mine':''}">
+          <div class="chat-meta"><span class="chat-name">${esc(m.name)}</span><span style="display:flex;align-items:center;gap:6px"><span>${chatTime(m.ts)}</span>${isOwnerEditsUnlocked()?`<button type="button" class="chat-delete" title="Elimina messaggio" data-id="${esc(m.id)}" onclick="deleteChatMessage(this.dataset.id)">x</button>`:''}</span></div>
+          <div class="chat-text">${esc(m.text)}</div>
+        </div>`;
+      }).join(''):`<div class="empty" style="padding:18px 0">Nessun messaggio.</div>`}
+    </div>
+    <div class="chat-compose">
+      <input type="text" id="chat-input" maxlength="240" placeholder="Scrivi un messaggio" onkeydown="if(event.key==='Enter')sendChatMessage()"/>
+      <button type="button" onclick="sendChatMessage()">INVIA</button>
+    </div>
+    <div id="chat-error" class="chat-error"></div>
+  </div>`;
+}
+
+function cleanChatText(v){return String(v||'').trim().replace(/\s+/g,' ').slice(0,240);}
+function normalizeChatMessages(list){
+  return (Array.isArray(list)?list:[]).map((m,i)=>({
+    id:String((m&&m.id)||i),
+    uid:String((m&&m.uid)||''),
+    name:cleanPlayerName(m&&m.name)||'Giocatore',
+    text:cleanChatText(m&&m.text),
+    ts:Number(m&&m.ts)||Date.now()
+  })).filter(m=>m.text).sort((a,b)=>a.ts-b.ts).slice(-80);
+}
+function updateChatMessages(list,shouldRender){
+  const next=normalizeChatMessages(list);
+  const changed=next.map(m=>m.id+'|'+m.ts+'|'+m.text).join('\n')!==chatMessages.map(m=>m.id+'|'+m.ts+'|'+m.text).join('\n');
+  chatMessages=next;
+  const last=next[next.length-1];
+  if(changed&&screen!=='chat'&&(!last||!currentUser||last.uid!==currentUser.uid)){
+    chatUnread=true;
+    updateChatNavUnread();
+  }
+  if(changed&&shouldRender&&screen==='chat')render();
+}
+function chatTime(ts){
+  return new Date(ts||Date.now()).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+}
+function scrollChatBottom(){
+  const el=document.getElementById('chat-list');
+  if(el)el.scrollTop=el.scrollHeight;
+}
+function showChatError(msg){
+  const el=document.getElementById('chat-error');
+  if(el)el.textContent=msg||'';
+}
+async function sendChatMessage(){
+  if(!currentUser||!firebaseReady||!currentRoomId)return showChatError('Entra in una stanza per scrivere.');
+  const inp=document.getElementById('chat-input');
+  const text=cleanChatText(inp&&inp.value);
+  if(!text)return;
+  const msg={
+    id:currentUser.uid+'-'+Date.now(),
+    uid:currentUser.uid,
+    name:cleanPlayerName(currentUser.displayName||currentUser.email)||'Giocatore',
+    text,
+    ts:Date.now()
+  };
+  if(inp)inp.value='';
+  showChatError('');
+  try{
+    const ref=db.collection('stanze').doc(currentRoomId);
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref);
+      const data=snap.exists?snap.data():{};
+      const next=normalizeChatMessages([...(data.chatMessages||[]),msg]).slice(-80);
+      tx.update(ref,{chatMessages:next,chatUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    });
+  }catch(e){
+    console.error('Errore chat:',e);
+    showChatError('Messaggio non inviato. Riprova.');
+  }
+}
+async function deleteChatMessage(id){
+  if(!requireOwnerEditUnlock()||!id)return;
+  if(!confirm('Eliminare questo messaggio?'))return;
+  try{
+    const ref=db.collection('stanze').doc(currentRoomId);
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      const data=snap.exists?snap.data():{};
+      const next=normalizeChatMessages(data.chatMessages||[]).filter(m=>m.id!==id);
+      tx.update(ref,{chatMessages:next,chatUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    });
+  }catch(e){
+    alert('Non riesco a eliminare il messaggio.');
+  }
+}
+
+function setRoundCaller(id){
+  const value=id===''?null:Number(id);
+  round.caller=value;
+  if(value!==null&&round.partner===value)round.partner=null;
+  syncLive();
+}
+function setRoundPartner(id){
+  const value=id===''?null:Number(id);
+  round.partner=value;
+  if(value!==null&&round.caller===value)round.caller=null;
+  syncLive();
+}
+function setRoundPoints(v){round.points=v;syncLive();}
+function tapPointDigit(d){
+  const next=(String(round.points||'')+d).slice(0,3);
+  round.points=next;
+  syncLive();
+}
+function backspacePoints(){
+  round.points=String(round.points||'').slice(0,-1);
+  syncLive();
+}
+function clearPoints(){
+  round.points='';
+  syncLive();
+}
+function setRoundResult(r){round.result=r;syncLive();}
+function showError(msg){const el=document.getElementById('round-error');if(el){el.style.display='block';el.textContent='⚠ '+msg;}}
+
+function confirmRound(){
+  const pts=parseInt(round.points);
+  if(round.caller===null)return showError('Scegli il chiamante.');
+  if(pts<61||pts>120)return showError('Punti: da 61 a 120.');
+  if(round.partner===null)return showError('Scegli il compagno.');
+  if(round.result===null)return showError('Indica se hai vinto o perso.');
+  const callerId=round.caller,partnerId=round.partner;
+  const won=round.result==='win',base=pts>=80?4:pts>=61?2:0,half=Math.floor(base/2),oppPts=pts>=80?2:1,cat=pts>=80?'CAPPOTTO':'NORMALE';
+  players=players.map(p=>{
+    const iC=p.id===callerId,iP=p.id===partnerId,iO=!iC&&!iP;
+    if(won){if(iC)return{...p,score:p.score+base};if(iP)return{...p,score:p.score+half};if(iO)return{...p,score:p.score-oppPts};}
+    else{if(iC)return{...p,score:p.score-base};if(iP)return{...p,score:p.score-half};if(iO)return{...p,score:p.score+oppPts};}
+    return p;
+  });
+  const playerNames={};
+  players.forEach(p=>{playerNames[p.id]=p.name;});
+  history.unshift({round:history.length+1,caller:players[callerId].name,callerId,partner:players[partnerId].name,partnerId,points:pts,basePoints:base,partnerPoints:half,oppPts,category:cat,won,ts:Date.now(),playerNames});
+  addActionLog('hand_add',`${players[callerId].name} con ${players[partnerId].name}, ${pts} punti, ${won?'vinta':'persa'}`);
+  round={caller:null,points:'',partner:null,result:null};
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  classTab='giornaliera';
+  showScreen('scoreboard');
+}
+function undoLastHand(){
+  if(!requireOwnerEditUnlock())return;
+  if(!history.length)return alert('Non ci sono mani da annullare.');
+  const last=history[0];
+  if(!confirm(`Annullare l'ultima mano?\n\n${last.caller} con ${last.partner}, ${last.points} punti`))return;
+  history.shift();
+  history=normalizeHandNumbers(history);
+  rebuildCurrentScores();
+  addActionLog('hand_undo',`${last.caller} con ${last.partner}, ${last.points} punti`);
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  render();
+}
+
+function resetGame(){
+  if(!requireOwnerEditUnlock())return;
+  if(!confirm('Azzerare i punteggi?\n\nLo storico verrà conservato.'))return;
+  players=players.map(p=>({...p,score:0}));
+  saveAll();if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();render();
+}
+function startNewGame(){
+  if(!confirm('Creare una nuova partita in questa stanza?\n\nSaranno azzerati punteggi, storico e mano in corso per tutti.'))return;
+  resetCurrentMatch(true);
+}
+function finishGame(){
+  if(!history.length&&!players.some(p=>p.score!==0)){
+    alert('Non ci sono mani da salvare per questa partita.');
+    return;
+  }
+  if(!confirm('Finire la partita e salvarla nello storico?\n\nLa stanza verrà preparata per una nuova partita.'))return;
+  resetCurrentMatch(true);
+}
+function resetCurrentMatch(archive){
+  if(archive)archiveCurrentGame();
+  players=defaultPlayers();
+  history=[];
+  round=normalizeRound(null);
+  classTab='giornaliera';
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  showScreen('scoreboard');
+}
+function archiveCurrentGame(){
+  const hasActivity=history.length||players.some(p=>p.score!==0);
+  if(!hasActivity)return false;
+  addActionLog('game_finish',`${history.length} mani archiviate`);
+  gameHistory.unshift({
+    ts:Date.now(),
+    hands:history.length,
+    rounds:history.map(h=>({...h})),
+    players:currentGameRows(),
+    roomId:currentRoomId||'',
+    roomName:currentRoomName||''
+  });
+  gameHistory=gameHistory.slice(0,50);
+  return true;
+}
+function deleteAllHistory(){
+  if(!requireOwnerEditUnlock())return;
+  if(!confirm('Eliminare tutto lo storico?\nQuesta azione è irreversibile.'))return;
+  history=[];saveAll();if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();render();
+}
+function deleteGameHistory(){
+  if(!requireOwnerEditUnlock())return;
+  if(!confirm('Eliminare lo storico partite?\nQuesta azione è irreversibile.'))return;
+  selectedGameIndex=null;
+  gameHistory=[];saveAll();if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();render();
+}
+function cleanPlayerName(v){return String(v||'').trim().replace(/\s+/g,' ').slice(0,20);}
+function mergeNames(...groups){
+  const out=[];
+  groups.flat().forEach(v=>{
+    const name=cleanPlayerName(v);
+    if(name&&!out.some(n=>n.toLowerCase()===name.toLowerCase()))out.push(name);
+  });
+  return out;
+}
+function roomMembersFromData(data){
+  return Object.values((data&&data.members)||{})
+    .sort((a,b)=>((a&&a.joinedAt)||0)-((b&&b.joinedAt)||0))
+    .map(m=>cleanPlayerName(m&&m.name))
+    .filter(Boolean);
+}
+function updateRoomMemberNames(data,shouldRender){
+  const previous=roomMembers.map(m=>m.uid+'|'+m.name).join('|');
+  roomMembers=Object.entries((data&&data.members)||{})
+    .sort((a,b)=>((a[1]&&a[1].joinedAt)||0)-((b[1]&&b[1].joinedAt)||0))
+    .map(([uid,m])=>({uid,name:cleanPlayerName(m&&m.name)||'Giocatore',joinedAt:(m&&m.joinedAt)||0}));
+  const next=mergeNames(roomMembers.map(m=>m.name));
+  const changed=roomMembers.map(m=>m.uid+'|'+m.name).join('|')!==previous;
+  roomMemberNames=next;
+  if(changed&&shouldRender){
+    if(screen==='editnames')render();
+    renderRoomSettings();
+  }
+}
+function namePool(){return mergeNames(savedNames);}
+function addSavedName(){
+  const inp=document.getElementById('saved-name-input');
+  const name=cleanPlayerName(inp&&inp.value);
+  if(!name)return;
+  savedNames=mergeNames(savedNames,[name]);
+  removedNames=removedNames.filter(n=>n.toLowerCase()!==name.toLowerCase());
+  if(inp)inp.value='';
+  saveAll();
+  scheduleRoomSync();
+  render();
+}
+function addRoomParticipantName(index){
+  const name=roomMemberNames[Number(index)];
+  if(!name)return;
+  savedNames=mergeNames(savedNames,[name]);
+  removedNames=removedNames.filter(n=>n.toLowerCase()!==name.toLowerCase());
+  saveAll();
+  scheduleRoomSync();
+  render();
+}
+function addRoomParticipantsToNames(){
+  if(!roomMemberNames.length)return;
+  savedNames=mergeNames(savedNames,roomMemberNames);
+  const keys=roomMemberNames.map(n=>n.toLowerCase());
+  removedNames=removedNames.filter(n=>!keys.includes(n.toLowerCase()));
+  saveAll();
+  scheduleRoomSync();
+  render();
+}
+function prefillSavedNameEdit(index){
+  const inp=document.getElementById('edit-saved-name-input');
+  const name=index===''?'':savedNames[Number(index)]||'';
+  if(inp)inp.value=name;
+}
+function editSavedName(){
+  if(!requireOwnerEditUnlock())return;
+  const sel=document.getElementById('edit-saved-name-index');
+  const inp=document.getElementById('edit-saved-name-input');
+  const selectedIndex=sel?sel.value:'';
+  if(selectedIndex===''){
+    alert('Scegli il nome da modificare.');
+    return;
+  }
+  const index=Number(selectedIndex);
+  const oldName=savedNames[index];
+  const newName=cleanPlayerName(inp&&inp.value);
+  if(!oldName){
+    alert('Scegli il nome da modificare.');
+    return;
+  }
+  if(!newName){
+    alert('Scrivi il nuovo nome.');
+    return;
+  }
+  if(savedNames.some((n,i)=>i!==index&&n.toLowerCase()===newName.toLowerCase())){
+    alert('Questo nome esiste gia.');
+    return;
+  }
+  savedNames=savedNames.map((n,i)=>i===index?newName:n);
+  removedNames=removedNames.filter(n=>n.toLowerCase()!==newName.toLowerCase());
+  players=players.map(p=>p.name.toLowerCase()===oldName.toLowerCase()?{...p,name:newName}:p);
+  saveAll();
+  scheduleRoomSync();
+  render();
+}
+function removeSavedName(index){
+  if(!requireOwnerEditUnlock())return;
+  const removed=savedNames[Number(index)];
+  if(!removed)return;
+  if(!confirm(`Eliminare "${removed}" anche dalle classifiche?`))return;
+  savedNames=savedNames.filter((_,i)=>i!==Number(index));
+  removedNames=mergeNames(removedNames,[removed]);
+  players=players.map((p,i)=>p.name.toLowerCase()===removed.toLowerCase()?{...p,name:`Giocatore ${i+1}`,score:0}:p);
+  saveAll();
+  scheduleRoomSync();
+  render();
+}
+function openRankNameMenu(name){
+  if(!requireOwnerEditUnlock())return;
+  const clean=cleanPlayerName(name);
+  if(!clean||DEFAULT_NAMES.includes(clean))return;
+  const modal=document.getElementById('rank-name-modal');
+  const input=document.getElementById('rank-name-input');
+  if(!modal||!input)return;
+  modal.dataset.oldName=clean;
+  input.value=clean;
+  modal.classList.add('show');
+  setTimeout(()=>{input.focus();input.select();},0);
+}
+function closeRankNameMenu(){
+  const modal=document.getElementById('rank-name-modal');
+  if(!modal)return;
+  modal.classList.remove('show');
+  modal.dataset.oldName='';
+}
+function knownRankingNames(){
+  const names=[...savedNames,...players.map(p=>p.name)];
+  const addHand=h=>{
+    if(!h)return;
+    names.push(h.caller,h.partner);
+    if(h.playerNames)names.push(...Object.values(h.playerNames));
+  };
+  history.forEach(addHand);
+  gameHistory.forEach(g=>{
+    (g.players||[]).forEach(p=>names.push(p.name));
+    (g.rounds||[]).forEach(addHand);
+  });
+  return mergeNames(names);
+}
+function renameHandPlayer(h,oldName,newName){
+  const same=v=>cleanPlayerName(v).toLowerCase()===oldName.toLowerCase();
+  const next={...h};
+  if(same(next.caller))next.caller=newName;
+  if(same(next.partner))next.partner=newName;
+  if(next.playerNames){
+    next.playerNames={...next.playerNames};
+    Object.keys(next.playerNames).forEach(id=>{
+      if(same(next.playerNames[id]))next.playerNames[id]=newName;
+    });
+  }
+  return next;
+}
+function modifyRankPlayerName(){
+  if(!requireOwnerEditUnlock())return;
+  const modal=document.getElementById('rank-name-modal');
+  const input=document.getElementById('rank-name-input');
+  const oldName=cleanPlayerName(modal&&modal.dataset.oldName);
+  const newName=cleanPlayerName(input&&input.value);
+  if(!oldName||!newName)return;
+  if(oldName.toLowerCase()===newName.toLowerCase()){
+    closeRankNameMenu();
+    return;
+  }
+  if(knownRankingNames().some(n=>n.toLowerCase()===newName.toLowerCase())){
+    alert('Questo nome esiste gia.');
+    return;
+  }
+  players=players.map(p=>p.name.toLowerCase()===oldName.toLowerCase()?{...p,name:newName}:p);
+  savedNames=mergeNames(savedNames.map(n=>n.toLowerCase()===oldName.toLowerCase()?newName:n),[newName]);
+  removedNames=removedNames.filter(n=>n.toLowerCase()!==oldName.toLowerCase()&&n.toLowerCase()!==newName.toLowerCase());
+  history=history.map(h=>renameHandPlayer(h,oldName,newName));
+  gameHistory=gameHistory.map(g=>({
+    ...g,
+    players:(g.players||[]).map(p=>p.name.toLowerCase()===oldName.toLowerCase()?{...p,name:newName}:p),
+    rounds:(g.rounds||[]).map(h=>renameHandPlayer(h,oldName,newName))
+  }));
+  closeRankNameMenu();
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  render();
+}
+function deleteRankPlayerName(){
+  const modal=document.getElementById('rank-name-modal');
+  const name=cleanPlayerName(modal&&modal.dataset.oldName);
+  if(!name)return;
+  removeNameFromRankings(name);
+}
+function removeNameFromRankings(name){
+  if(!requireOwnerEditUnlock())return;
+  const clean=cleanPlayerName(name);
+  if(!clean)return;
+  if(!confirm(`Eliminare "${clean}" da tutte le classifiche?`))return;
+  removedNames=mergeNames(removedNames,[clean]);
+  players=players.map((p,i)=>p.name.toLowerCase()===clean.toLowerCase()?{...p,name:`Giocatore ${i+1}`,score:0}:p);
+  saveAll();
+  scheduleRoomSync();
+  closeRankNameMenu();
+  render();
+}
+function startGameScoreEdit(index){
+  if(!requireOwnerEditUnlock())return;
+  gameScoreEditIndex=Number(index);
+  render();
+}
+function cancelGameScoreEdit(){
+  gameScoreEditIndex=null;
+  render();
+}
+function saveGameScoreEdit(index){
+  if(!requireOwnerEditUnlock())return;
+  const gameIndex=Number(index);
+  const game=gameHistory[gameIndex];
+  if(!game)return;
+  const rows=gameRows(game);
+  let corrected;
+  try{
+    corrected=rows.map((p,i)=>{
+      const input=document.getElementById('game-score-'+i);
+      const score=Number(input&&input.value);
+      if(!Number.isInteger(score)||score<-999||score>999)throw new Error('invalid-score');
+      return {...p,score};
+    });
+  }catch(e){
+    alert('Inserisci solo punteggi interi compresi tra -999 e 999.');
+    return;
+  }
+  gameHistory[gameIndex]={
+    ...game,
+    players:corrected,
+    scoreEdited:true,
+    scoreEditedAt:Date.now(),
+    scoreEditedBy:currentUser?currentUser.uid:'offline'
+  };
+  addActionLog('game_score_edit',`Partita ${gameHistory.length-gameIndex}`);
+  gameScoreEditIndex=null;
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  render();
+}
+function applySelectedNames(){
+  const selected=players.map((p,i)=>{
+    const inp=document.getElementById('name-'+i);
+    return cleanPlayerName(inp&&inp.value)||`Giocatore ${i+1}`;
+  });
+  const keys=selected.map(n=>n.toLowerCase());
+  if(new Set(keys).size!==keys.length){
+    alert('Scegli 5 nomi diversi.');
+    return false;
+  }
+  players=players.map((p,i)=>({...p,name:selected[i]}));
+  savedNames=mergeNames(savedNames,selected.filter(n=>!DEFAULT_NAMES.includes(n)));
+  saveAll();
+  if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();
+  return true;
+}
+function saveNames(){
+  if(!applySelectedNames())return;
+  showScreen('scoreboard');
+}
+function loadNamesForRound(){
+  if(!applySelectedNames())return;
+  showScreen('newround');
+}
+function exportBackup(){
+  const data={players,history,gameHistory,savedNames,removedNames,actionLog,exportedAt:new Date().toISOString()};
+  const a=document.createElement('a');
+  const date=new Date().toLocaleDateString('it-IT').replace(/\//g,'-');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download=`briscola5sir_backup_${date}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.players||!data.history)return alert('File non valido.');
+      if(!confirm(`Ripristinare il backup del ${new Date(data.exportedAt).toLocaleDateString('it-IT')}?`))return;
+      players=data.players;history=data.history;gameHistory=data.gameHistory||[];actionLog=data.actionLog||[];
+      savedNames=mergeNames(savedNames,data.savedNames||[],players.map(p=>p.name));
+      removedNames=mergeNames(data.removedNames||removedNames);
+      saveAll();if(currentUser&&firebaseReady&&currentRoomId)syncToRoom();showScreen('scoreboard');
+      alert('✅ Backup ripristinato!');
+    }catch(e){alert('Errore nel leggere il file.');}
+  };
+  reader.readAsText(file);input.value='';
+}
+function shareClassifica(){
+  const date=new Date().toLocaleDateString('it-IT');
+  const medals=['1.','2.','3.','4.','5.'];
+  let txt='';
+  if(classTab==='totale'){
+    const sorted=totalGameRows();
+    txt=`Punteggi briscola a 5\nCLASSIFICA TOTALE\n${date} - Partite: ${totalGameCount()}\n${'-'.repeat(26)}\n`;
+    sorted.forEach((p,i)=>{const v=p.wins||0,pt=p.score||0;txt+=`${medals[i]||String(i+1)+'.'} ${p.name.padEnd(14)} ${v} vittorie (${pt>0?'+'+pt:pt} pt)\n`;});
+    if(sorted[0]&&(sorted[0].wins||0)!==0)txt+=`${'-'.repeat(26)}\nLeader: ${sorted[0].name}\n`;
+  } else if(classTab==='mensile') {
+    const mG=monthlyGameCount(viewMonth,viewYear),sorted=monthlyGameRows(viewMonth,viewYear);
+    txt=`Punteggi briscola a 5\n${MESI[viewMonth].toUpperCase()} ${viewYear} - Partite: ${mG}\n${'-'.repeat(26)}\n`;
+    sorted.forEach((p,i)=>{const v=p.wins||0,pt=p.score||0;txt+=`${medals[i]||String(i+1)+'.'} ${p.name.padEnd(14)} ${v} vittorie (${pt>0?'+'+pt:pt} pt)\n`;});
+    if(sorted[0]&&(sorted[0].wins||0)!==0)txt+=`${'-'.repeat(26)}\nRe del mese: ${sorted[0].name}\n`;
+  } else {
+    const dR=dailyRounds(viewDay),sorted=dailyPlayedRows(viewDay);
+    txt=`Punteggi briscola a 5\nCLASSIFICA GIORNALIERA\n${dayLabel(viewDay)} - Manche: ${dR}\n${'-'.repeat(26)}\n`;
+    sorted.forEach((p,i)=>{const s=p.score;txt+=`${medals[i]||String(i+1)+'.'} ${p.name.padEnd(14)} ${s>0?'+'+s:s} pt\n`;});
+    if(sorted[0]&&sorted[0].score!==0)txt+=`${'-'.repeat(26)}\nRe del giorno: ${sorted[0].name}\n`;
+  }
+  txt+=`\nSegnapunti: Punteggi briscola a 5`;
+  if(navigator.share)navigator.share({title:'Punteggi briscola a 5',text:txt}).catch(()=>{});
+  else navigator.clipboard.writeText(txt).then(()=>alert('Copiato!')).catch(()=>prompt('Copia:',txt));
+}function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>
